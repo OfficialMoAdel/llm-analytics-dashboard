@@ -28,7 +28,7 @@ export default function DashboardContent() {
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [selectedWorkflow, setSelectedWorkflow] = useState("all")
-  const [searchQuery, setSearchQuery] = useState("")
+  // const [searchQuery, setSearchQuery] = useState("")
 
   const loadData = async () => {
     setLoading(true)
@@ -175,7 +175,7 @@ export default function DashboardContent() {
         <WorkflowTokenUsageOverTime data={filteredData} />
 
         {/* Detailed Data Table */}
-        <DetailedDataTable data={filteredData} searchQuery={searchQuery} />
+        <DetailedDataTable data={filteredData} />
       </div>
     </div>
   )

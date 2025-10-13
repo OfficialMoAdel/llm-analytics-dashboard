@@ -25,8 +25,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-.clinerules/byterover-rules.md
-.kilocode/rules/byterover-rules.md
-.roo/rules/byterover-rules.md
-.kiro/steering/byterover-rules.md
+.clinerules
+.kilocode
+.roo
+.opencode
 CLAUDE.md
+mobile1.png
+mobile.png
+Screenshot 2025-10-13 224815.png
+Screenshot 2025-10-13 224646.png
+agent.md
