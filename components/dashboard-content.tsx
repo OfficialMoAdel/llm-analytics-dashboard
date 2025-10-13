@@ -92,42 +92,56 @@ export default function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-[1400px] space-y-6 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-[1400px] space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6 lg:p-8">
         {/* Header */}
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <div className="text-4xl">🤖📊</div>
-              <h1 className="text-balance text-3xl font-bold tracking-tight">LLM Analytics Dashboard</h1>
+              <div className="text-3xl sm:text-4xl">🤖📊</div>
+              <h1 className="text-balance text-2xl sm:text-3xl font-bold tracking-tight">LLM Analytics Dashboard</h1>
             </div>
             <p className="mt-2 text-pretty text-sm text-muted-foreground">
               Monitor and analyze your AI model token usage and costs
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 self-start">
             {lastUpdated && (
               <p className="text-xs text-muted-foreground">Last updated: {lastUpdated.toLocaleTimeString()}</p>
             )}
-            <ThemeToggle />
+            <div className="min-h-[44px] min-w-[44px] flex items-center justify-center">
+              <ThemeToggle />
+            </div>
           </div>
         </div>
 
         {/* Filters */}
         <Card>
-          <CardContent className="pt-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <CardContent className="pt-4 sm:pt-6">
+            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2">
                 <Label htmlFor="start-date">Start Date</Label>
-                <Input id="start-date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                <Input
+                  id="start-date"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full min-h-[44px] sm:min-h-[36px]"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="end-date">End Date</Label>
-                <Input id="end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                <Input
+                  id="end-date"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full min-h-[44px] sm:min-h-[36px]"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="workflow">Workflow</Label>
                 <Select value={selectedWorkflow} onValueChange={setSelectedWorkflow}>
-                  <SelectTrigger id="workflow">
+                  <SelectTrigger id="workflow" className="w-full min-h-[44px] sm:min-h-[36px]">
                     <SelectValue placeholder="All Workflows" />
                   </SelectTrigger>
                   <SelectContent>
@@ -140,11 +154,17 @@ export default function DashboardContent() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-end gap-2">
-                <Button onClick={handleRefresh} variant="outline" size="icon" disabled={loading}>
+              <div className="flex items-end gap-2 sm:flex-col sm:items-stretch">
+                <Button
+                  onClick={handleRefresh}
+                  variant="outline"
+                  size="icon"
+                  disabled={loading}
+                  className="min-h-[44px] sm:min-h-[36px] px-3"
+                >
                   <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                 </Button>
-                <Button className="flex-1">
+                <Button className="flex-1 min-h-[44px] sm:min-h-[48px]">
                   <Filter className="mr-2 h-4 w-4" />
                   Apply Filters
                 </Button>
@@ -157,17 +177,17 @@ export default function DashboardContent() {
         <MetricsCards data={filteredData} />
 
         {/* Charts Grid */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
           <TokenUsageByModel data={filteredData} />
           <TokenUsageOverTime data={filteredData} />
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
           <CostBreakdownByModel data={filteredData} />
           <TokenUsageByWorkflow data={filteredData} />
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
           <WorkflowCostComparison data={filteredData} />
           <WorkflowModelCorrelation data={filteredData} />
         </div>

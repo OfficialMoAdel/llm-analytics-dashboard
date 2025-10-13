@@ -36,14 +36,14 @@ export default function MetricsCards({ data }: MetricsCardsProps) {
 
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Tokens</CardTitle>
-            <span className="text-2xl">🔢</span>
+            <span className="text-2xl sm:text-xl">🔢</span>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalTokens.toLocaleString()}</div>
+            <div className="text-2xl sm:text-xl font-bold">{totalTokens.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">from previous period</p>
           </CardContent>
         </Card>
@@ -51,10 +51,10 @@ export default function MetricsCards({ data }: MetricsCardsProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
-            <span className="text-2xl">💰</span>
+            <span className="text-2xl sm:text-xl">💰</span>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalCost.toFixed(2)}</div>
+            <div className="text-2xl sm:text-xl font-bold">${totalCost.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">from previous period</p>
           </CardContent>
         </Card>
@@ -62,27 +62,27 @@ export default function MetricsCards({ data }: MetricsCardsProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Most Used Model</CardTitle>
-            <span className="text-2xl">🤖</span>
+            <span className="text-2xl sm:text-xl">🤖</span>
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold">{mostUsedModel?.[0] || "N/A"}</div>
+            <div className="text-lg sm:text-base font-bold break-words">{mostUsedModel?.[0] || "N/A"}</div>
             <p className="text-xs text-muted-foreground">{mostUsedModelPercentage}% of total tokens</p>
           </CardContent>
         </Card>
-      </div>
 
-      {topWorkflow && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Top Workflow</CardTitle>
-            <span className="text-2xl">⚡</span>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold">{topWorkflow[0]}</div>
-            <p className="text-xs text-muted-foreground">{topWorkflowPercentage}% of total tokens</p>
-          </CardContent>
-        </Card>
-      )}
+        {topWorkflow && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Top Workflow</CardTitle>
+              <span className="text-2xl sm:text-xl">⚡</span>
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg sm:text-base font-bold break-words">{topWorkflow[0]}</div>
+              <p className="text-xs text-muted-foreground">{topWorkflowPercentage}% of total tokens</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </>
   )
 }

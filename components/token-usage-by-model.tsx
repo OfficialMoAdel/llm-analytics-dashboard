@@ -54,12 +54,13 @@ export default function TokenUsageByModel({ data }: TokenUsageByModelProps) {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: "right",
+        position: "bottom",
         labels: {
           padding: 15,
           font: {
-            size: 12,
+            size: 11,
           },
+          boxWidth: 12,
         },
       },
       tooltip: {
@@ -82,7 +83,7 @@ export default function TokenUsageByModel({ data }: TokenUsageByModelProps) {
         <CardTitle>Token Usage by Model</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[350px]">
+        <div className="h-[280px] sm:h-[320px] md:h-[350px]">
           <Pie data={chartData} options={options} />
         </div>
       </CardContent>

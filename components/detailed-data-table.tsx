@@ -76,18 +76,19 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Detailed Data</CardTitle>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Show</span>
+              <label htmlFor="rows-per-page" className="text-sm text-muted-foreground">Show</label>
               <select
+                id="rows-per-page"
                 value={rowsPerPage}
                 onChange={(e) => {
                   setRowsPerPage(Number(e.target.value))
                   setCurrentPage(1)
                 }}
-                className="rounded-md border border-input bg-background px-3 py-1 text-sm"
+                className="rounded-md border border-input bg-background px-3 py-1 text-sm min-h-[36px]"
               >
                 <option value={10}>10</option>
                 <option value={25}>25</option>
@@ -102,7 +103,7 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
                 setSearchTerm(e.target.value)
                 setCurrentPage(1)
               }}
-              className="w-64"
+              className="w-full sm:w-64 min-h-[44px] sm:min-h-[36px]"
             />
           </div>
         </div>
@@ -142,14 +143,14 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
                         <span className="text-xs text-muted-foreground">{time}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-xs max-w-[120px] truncate" title={row.execution_id}>
+                    <TableCell className="font-mono text-xs max-w-[100px] sm:max-w-[120px] truncate" title={row.execution_id}>
                       {row.execution_id}
                     </TableCell>
-                    <TableCell className="text-sm">{row.user_id}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-sm break-words max-w-[80px] sm:max-w-none">{row.user_id}</TableCell>
+                    <TableCell className="break-words max-w-[120px] sm:max-w-none">
                       <span className="inline-flex items-center gap-1">
-                        <span className="text-xl">🤖</span>
-                        <span className="text-sm">{row.llm_model}</span>
+                        <span className="text-lg sm:text-xl">🤖</span>
+                        <span className="text-sm break-words">{row.llm_model}</span>
                       </span>
                     </TableCell>
                     <TableCell className="text-right">{row.input_tokens.toLocaleString()}</TableCell>
@@ -166,15 +167,21 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
           </Table>
         </div>
 
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Showing {startIndex + 1} to {Math.min(endIndex, sortedAndFilteredData.length)} of{" "}
             {sortedAndFilteredData.length} entries
           </p>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentPage === 1}>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrevious}
+              disabled={currentPage === 1}
+              className="min-h-[36px] px-2 sm:px-3"
+            >
               <ChevronLeft className="h-4 w-4" />
-              Previous
+              <span className="hidden sm:inline">Previous</span>
             </Button>
             {[...Array(Math.min(3, totalPages))].map((_, i) => {
               const pageNum = currentPage <= 2 ? i + 1 : currentPage - 1 + i
@@ -185,13 +192,20 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
                   variant={currentPage === pageNum ? "default" : "outline"}
                   size="sm"
                   onClick={() => setCurrentPage(pageNum)}
+                  className="min-h-[36px] min-w-[36px] sm:min-w-[32px]"
                 >
                   {pageNum}
                 </Button>
               )
             })}
-            <Button variant="outline" size="sm" onClick={handleNext} disabled={currentPage === totalPages}>
-              Next
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNext}
+              disabled={currentPage === totalPages}
+              className="min-h-[36px] px-2 sm:px-3"
+            >
+              <span className="hidden sm:inline">Next</span>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

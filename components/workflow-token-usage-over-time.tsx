@@ -76,11 +76,18 @@ export default function WorkflowTokenUsageOverTime({ data }: WorkflowTokenUsageO
     plugins: {
       legend: {
         position: "bottom",
+        labels: {
+          font: {
+            size: 12
+          },
+          padding: 15,
+        }
       },
       tooltip: {
         callbacks: {
           label: (context) => {
-            return `${context.dataset.label}: ${context.parsed.y.toLocaleString()} tokens`
+            const value = context.parsed?.y || 0
+            return `${context.dataset.label}: ${value.toLocaleString()} tokens`
           },
         },
       },
@@ -90,11 +97,20 @@ export default function WorkflowTokenUsageOverTime({ data }: WorkflowTokenUsageO
         beginAtZero: true,
         stacked: true,
         ticks: {
-          callback: (value) => value.toLocaleString(),
+          callback: (value) => Number(value).toLocaleString(),
+          font: {
+            size: 11
+          }
         },
       },
       x: {
         stacked: true,
+        ticks: {
+          font: {
+            size: 10
+          },
+          maxRotation: 45,
+        }
       },
     },
   }
@@ -106,7 +122,7 @@ export default function WorkflowTokenUsageOverTime({ data }: WorkflowTokenUsageO
         <p className="text-sm text-muted-foreground">Token Usage Trends for Top 3 Workflows</p>
       </CardHeader>
       <CardContent>
-        <div className="h-[350px]">
+        <div className="h-[250px] sm:h-[300px] md:h-[350px]">
           <Line data={chartData} options={options} />
         </div>
       </CardContent>

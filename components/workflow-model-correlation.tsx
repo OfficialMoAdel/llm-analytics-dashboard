@@ -69,11 +69,18 @@ export default function WorkflowModelCorrelation({ data }: WorkflowModelCorrelat
     plugins: {
       legend: {
         position: "bottom",
+        labels: {
+          font: {
+            size: 12
+          },
+          padding: 15,
+        }
       },
       tooltip: {
         callbacks: {
           label: (context) => {
-            return `${context.dataset.label}: ${context.parsed.y.toLocaleString()} tokens`
+            const value = context.parsed?.y || 0
+            return `${context.dataset.label}: ${value.toLocaleString()} tokens`
           },
         },
       },
@@ -81,11 +88,20 @@ export default function WorkflowModelCorrelation({ data }: WorkflowModelCorrelat
     scales: {
       x: {
         stacked: false,
+        ticks: {
+          font: {
+            size: 11
+          },
+          maxRotation: 45,
+        }
       },
       y: {
         beginAtZero: true,
         ticks: {
-          callback: (value) => value.toLocaleString(),
+          callback: (value) => Number(value).toLocaleString(),
+          font: {
+            size: 11
+          }
         },
       },
     },
@@ -98,7 +114,7 @@ export default function WorkflowModelCorrelation({ data }: WorkflowModelCorrelat
         <p className="text-sm text-muted-foreground">Top 3 Workflows by Model Usage</p>
       </CardHeader>
       <CardContent>
-        <div className="h-[350px]">
+        <div className="h-[250px] sm:h-[300px] md:h-[350px]">
           <Bar data={chartData} options={options} />
         </div>
       </CardContent>
