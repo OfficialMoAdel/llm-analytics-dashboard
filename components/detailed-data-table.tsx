@@ -109,8 +109,8 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
+        <div className="overflow-x-auto -webkit-overflow-scrolling-touch border rounded-lg">
+          <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow>
                 <TableHead>
@@ -143,14 +143,14 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
                         <span className="text-xs text-muted-foreground">{time}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-xs max-w-[100px] sm:max-w-[120px] truncate" title={row.execution_id}>
+                    <TableCell className="font-mono text-xs sm:text-sm max-w-[100px] sm:max-w-[120px] truncate" title={row.execution_id}>
                       {row.execution_id}
                     </TableCell>
-                    <TableCell className="text-sm break-words max-w-[80px] sm:max-w-none">{row.user_id}</TableCell>
+                    <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none">{row.user_id}</TableCell>
                     <TableCell className="break-words max-w-[120px] sm:max-w-none">
                       <span className="inline-flex items-center gap-1">
                         <span className="text-lg sm:text-xl">🤖</span>
-                        <span className="text-sm break-words">{row.llm_model}</span>
+                        <span className="text-xs sm:text-sm break-words">{row.llm_model}</span>
                       </span>
                     </TableCell>
                     <TableCell className="text-right">{row.input_tokens.toLocaleString()}</TableCell>

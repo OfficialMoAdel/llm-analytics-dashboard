@@ -5,12 +5,15 @@ import type { AnalyticsRow } from "@/lib/fetch-data"
 import { useMemo } from "react"
 import { Bar } from "react-chartjs-2"
 import type { ChartOptions } from "chart.js"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface WorkflowModelCorrelationProps {
   data: AnalyticsRow[]
 }
 
 export default function WorkflowModelCorrelation({ data }: WorkflowModelCorrelationProps) {
+  const isMobile = useIsMobile()
+
   const chartData = useMemo(() => {
     // Get top 3 workflows
     const workflowTokens = data.reduce(
@@ -70,11 +73,28 @@ export default function WorkflowModelCorrelation({ data }: WorkflowModelCorrelat
       legend: {
         position: "bottom",
         labels: {
-          font: {
-            size: 12
+          font: { size: isMobile ? 9 : 12 },
+          padding: isMobile ? 8 : 15,
+          boxWidth: isMobile ? 10 : 12,
+          // ADD truncation for model names
+          generateLabels: (chart) => {
+            const datasets = chart.data.datasets
+            return datasets.map((dataset, i) => {
+              const label = dataset.label || ''
+              const maxLength = isMobile ? 18 : 30
+              const truncated = label.length > maxLength
+                ? label.substring(0, maxLength) + '...'
+                : label
+              return {
+                text: truncated,
+                fillStyle: dataset.backgroundColor as string,
+                hidden: false,
+                index: i,
+                datasetIndex: i,
+              }
+            })
           },
-          padding: 15,
-        }
+        },
       },
       tooltip: {
         callbacks: {
@@ -89,19 +109,21 @@ export default function WorkflowModelCorrelation({ data }: WorkflowModelCorrelat
       x: {
         stacked: false,
         ticks: {
-          font: {
-            size: 11
-          },
+          font: { size: isMobile ? 9 : 11 },
           maxRotation: 45,
+          minRotation: 45, // ADD THIS
+          autoSkip: true, // ADD THIS
+          maxTicksLimit: isMobile ? 3 : undefined, // ADD THIS
         }
       },
       y: {
         beginAtZero: true,
         ticks: {
-          callback: (value) => Number(value).toLocaleString(),
-          font: {
-            size: 11
-          }
+          callback: (value) => {
+            const num = Number(value).toLocaleString()
+            return isMobile && num.length > 8 ? num.substring(0, 6) + '...' : num
+          },
+          font: { size: isMobile ? 9 : 11 }
         },
       },
     },
@@ -114,7 +136,7 @@ export default function WorkflowModelCorrelation({ data }: WorkflowModelCorrelat
         <p className="text-sm text-muted-foreground">Top 3 Workflows by Model Usage</p>
       </CardHeader>
       <CardContent>
-        <div className="h-[250px] sm:h-[300px] md:h-[350px]">
+        <div className="h-[300px] sm:h-[400px]">
           <Bar data={chartData} options={options} />
         </div>
       </CardContent>

@@ -14,6 +14,7 @@ import {
   Legend,
   type ChartOptions,
 } from "chart.js"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
@@ -22,6 +23,8 @@ interface CostBreakdownByModelProps {
 }
 
 export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps) {
+  const isMobile = useIsMobile()
+
   const chartData = useMemo(() => {
     const modelCosts = data.reduce(
       (acc, row) => {
@@ -56,7 +59,7 @@ export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps
       tooltip: {
         callbacks: {
           label: (context) => {
-            return `Cost: $${context.parsed.x.toFixed(5)}`
+            return `Cost: $${(context.parsed.x || 0).toFixed(5)}`
           },
         },
       },
@@ -66,6 +69,20 @@ export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps
         beginAtZero: true,
         ticks: {
           callback: (value) => `$${Number(value).toFixed(3)}`,
+          font: { size: isMobile ? 9 : 11 }
+        },
+      },
+      y: {
+        ticks: {
+          font: { size: isMobile ? 9 : 11 },
+          // ADD THIS callback for truncation
+          callback: function(value) {
+            const label = this.getLabelForValue(Number(value))
+            const maxLength = isMobile ? 15 : 25
+            return label.length > maxLength
+              ? label.substring(0, maxLength) + '...'
+              : label
+          },
         },
       },
     },
@@ -77,7 +94,7 @@ export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps
         <CardTitle>Cost Breakdown by Model</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[350px]">
+        <div className="h-[300px] sm:h-[400px]">
           <Bar data={chartData} options={options} />
         </div>
       </CardContent>

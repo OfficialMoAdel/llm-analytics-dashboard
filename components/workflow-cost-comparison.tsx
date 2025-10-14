@@ -5,6 +5,7 @@ import type { AnalyticsRow } from "@/lib/fetch-data"
 import { useMemo } from "react"
 import { Doughnut } from "react-chartjs-2"
 import type { ChartOptions } from "chart.js"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface WorkflowCostComparisonProps {
   data: AnalyticsRow[]
@@ -13,6 +14,8 @@ interface WorkflowCostComparisonProps {
 const COLORS = ["#3b82f6", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6"]
 
 export default function WorkflowCostComparison({ data }: WorkflowCostComparisonProps) {
+  const isMobile = useIsMobile()
+
   const chartData = useMemo(() => {
     const workflowCosts = data.reduce(
       (acc, row) => {
@@ -43,11 +46,32 @@ export default function WorkflowCostComparison({ data }: WorkflowCostComparisonP
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: "right",
+        position: isMobile ? "bottom" : "right", // CHANGE THIS
         labels: {
-          padding: 15,
-          font: {
-            size: 12,
+          padding: isMobile ? 8 : 15,
+          font: { size: isMobile ? 10 : 12 },
+          boxWidth: isMobile ? 10 : 12,
+          // ADD truncation like pie chart
+          generateLabels: (chart) => {
+            const data = chart.data
+            if (data.labels && data.labels.length && data.datasets.length) {
+              return data.labels.map((label, i) => {
+                const maxLength = isMobile ? 15 : 25
+                const labelStr = String(label)
+                const truncated = labelStr.length > maxLength
+                  ? labelStr.substring(0, maxLength) + '...'
+                  : labelStr
+                return {
+                  text: truncated,
+                  fillStyle: Array.isArray(data.datasets[0].backgroundColor)
+                    ? data.datasets[0].backgroundColor[i] as string
+                    : data.datasets[0].backgroundColor as string,
+                  hidden: false,
+                  index: i,
+                }
+              })
+            }
+            return []
           },
         },
       },
@@ -61,6 +85,7 @@ export default function WorkflowCostComparison({ data }: WorkflowCostComparisonP
         },
       },
     },
+    cutout: "60%",
   }
 
   return (
@@ -69,7 +94,7 @@ export default function WorkflowCostComparison({ data }: WorkflowCostComparisonP
         <CardTitle>Workflow Cost Comparison</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[350px]">
+        <div className="h-[350px] sm:h-[400px]">
           <Doughnut data={chartData} options={options} />
         </div>
       </CardContent>

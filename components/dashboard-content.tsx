@@ -178,18 +178,30 @@ export default function DashboardContent() {
 
         {/* Charts Grid */}
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-          <TokenUsageByModel data={filteredData} />
-          <TokenUsageOverTime data={filteredData} />
+          <div className="h-[300px] sm:h-[400px]">
+            <TokenUsageByModel data={filteredData} />
+          </div>
+          <div className="h-[300px] sm:h-[400px]">
+            <TokenUsageOverTime data={filteredData} />
+          </div>
         </div>
 
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-          <CostBreakdownByModel data={filteredData} />
-          <TokenUsageByWorkflow data={filteredData} />
+          <div className="h-[300px] sm:h-[400px]">
+            <CostBreakdownByModel data={filteredData} />
+          </div>
+          <div className="h-[300px] sm:h-[400px]">
+            <TokenUsageByWorkflow data={filteredData} />
+          </div>
         </div>
 
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-          <WorkflowCostComparison data={filteredData} />
-          <WorkflowModelCorrelation data={filteredData} />
+          <div className="h-[350px] sm:h-[400px]">
+            <WorkflowCostComparison data={filteredData} />
+          </div>
+          <div className="h-[300px] sm:h-[400px]">
+            <WorkflowModelCorrelation data={filteredData} />
+          </div>
         </div>
 
         <WorkflowTokenUsageOverTime data={filteredData} />

@@ -5,6 +5,7 @@ import type { AnalyticsRow } from "@/lib/fetch-data"
 import { useMemo } from "react"
 import { Pie } from "react-chartjs-2"
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, type ChartOptions } from "chart.js"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
@@ -24,6 +25,8 @@ const COLORS = [
 ]
 
 export default function TokenUsageByModel({ data }: TokenUsageByModelProps) {
+  const isMobile = useIsMobile()
+
   const chartData = useMemo(() => {
     const modelTokens = data.reduce(
       (acc, row) => {
@@ -56,11 +59,32 @@ export default function TokenUsageByModel({ data }: TokenUsageByModelProps) {
       legend: {
         position: "bottom",
         labels: {
-          padding: 15,
-          font: {
-            size: 11,
+          padding: isMobile ? 8 : 15,
+          font: { size: isMobile ? 9 : 11 },
+          boxWidth: isMobile ? 10 : 12,
+          // ADD THIS - Truncate long model names
+          generateLabels: (chart) => {
+            const data = chart.data
+            if (data.labels && data.labels.length && data.datasets.length) {
+              return data.labels.map((label, i) => {
+                const maxLength = isMobile ? 18 : 30
+                const labelStr = String(label)
+                const truncated = labelStr.length > maxLength
+                  ? labelStr.substring(0, maxLength) + '...'
+                  : labelStr
+
+                return {
+                  text: truncated,
+                  fillStyle: Array.isArray(data.datasets[0].backgroundColor)
+                    ? data.datasets[0].backgroundColor[i] as string
+                    : data.datasets[0].backgroundColor as string,
+                  hidden: false,
+                  index: i,
+                }
+              })
+            }
+            return []
           },
-          boxWidth: 12,
         },
       },
       tooltip: {
@@ -83,7 +107,7 @@ export default function TokenUsageByModel({ data }: TokenUsageByModelProps) {
         <CardTitle>Token Usage by Model</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[280px] sm:h-[320px] md:h-[350px]">
+        <div className="h-[300px] sm:h-[400px]">
           <Pie data={chartData} options={options} />
         </div>
       </CardContent>

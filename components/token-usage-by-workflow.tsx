@@ -5,12 +5,15 @@ import type { AnalyticsRow } from "@/lib/fetch-data"
 import { useMemo } from "react"
 import { Bar } from "react-chartjs-2"
 import type { ChartOptions } from "chart.js"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface TokenUsageByWorkflowProps {
   data: AnalyticsRow[]
 }
 
 export default function TokenUsageByWorkflow({ data }: TokenUsageByWorkflowProps) {
+  const isMobile = useIsMobile()
+
   const chartData = useMemo(() => {
     const workflowTokens = data.reduce(
       (acc, row) => {
@@ -47,7 +50,7 @@ export default function TokenUsageByWorkflow({ data }: TokenUsageByWorkflowProps
       tooltip: {
         callbacks: {
           label: (context) => {
-            return `Tokens: ${context.parsed.x.toLocaleString()}`
+            return `Tokens: ${(context.parsed.x || 0).toLocaleString()}`
           },
         },
       },
@@ -57,6 +60,20 @@ export default function TokenUsageByWorkflow({ data }: TokenUsageByWorkflowProps
         beginAtZero: true,
         ticks: {
           callback: (value) => value.toLocaleString(),
+          font: { size: isMobile ? 9 : 11 }
+        },
+      },
+      y: {
+        ticks: {
+          font: { size: isMobile ? 9 : 11 },
+          // ADD THIS callback for truncation
+          callback: function(value) {
+            const label = this.getLabelForValue(Number(value))
+            const maxLength = isMobile ? 15 : 25
+            return label.length > maxLength
+              ? label.substring(0, maxLength) + '...'
+              : label
+          },
         },
       },
     },
@@ -68,7 +85,7 @@ export default function TokenUsageByWorkflow({ data }: TokenUsageByWorkflowProps
         <CardTitle>Token Usage by Workflow</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[350px]">
+        <div className="h-[300px] sm:h-[400px]">
           <Bar data={chartData} options={options} />
         </div>
       </CardContent>
