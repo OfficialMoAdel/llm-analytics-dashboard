@@ -6,6 +6,7 @@ import { useMemo } from "react"
 import { Pie } from "react-chartjs-2"
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, type ChartOptions } from "chart.js"
 import { useIsMobile } from "@/hooks/use-mobile"
+import React from "react"
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
@@ -24,7 +25,7 @@ const COLORS = [
   "#f97316", // orange
 ]
 
-export default function TokenUsageByModel({ data }: TokenUsageByModelProps) {
+export default React.memo(function TokenUsageByModel({ data }: TokenUsageByModelProps)  {
   const isMobile = useIsMobile()
 
   const chartData = useMemo(() => {
@@ -57,10 +58,13 @@ export default function TokenUsageByModel({ data }: TokenUsageByModelProps) {
     maintainAspectRatio: false,
     plugins: {
       legend: {
+        display: isMobile ? false : true,
         position: "bottom",
         labels: {
           padding: isMobile ? 8 : 15,
-          font: { size: isMobile ? 9 : 11 },
+          font: {
+            size: isMobile ? 9 : 11
+          },
           boxWidth: isMobile ? 10 : 12,
           // ADD THIS - Truncate long model names
           generateLabels: (chart) => {
@@ -107,10 +111,10 @@ export default function TokenUsageByModel({ data }: TokenUsageByModelProps) {
         <CardTitle>Token Usage by Model</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] sm:h-[400px]">
+        <div className="h-[350px] sm:h-[400px]">
           <Pie data={chartData} options={options} />
         </div>
       </CardContent>
     </Card>
   )
-}
+} )

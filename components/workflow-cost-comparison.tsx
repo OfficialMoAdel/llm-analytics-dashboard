@@ -46,6 +46,7 @@ export default function WorkflowCostComparison({ data }: WorkflowCostComparisonP
     maintainAspectRatio: false,
     plugins: {
       legend: {
+        display: isMobile ? false : true,
         position: isMobile ? "bottom" : "right", // CHANGE THIS
         labels: {
           padding: isMobile ? 8 : 15,

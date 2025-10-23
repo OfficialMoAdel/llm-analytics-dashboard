@@ -62,7 +62,7 @@ export default function TokenUsageOverTime({ data }: TokenUsageOverTimeProps) {
       tooltip: {
         callbacks: {
           label: (context) => {
-            return `Tokens: ${context.parsed.y.toLocaleString()}`
+            return `Tokens: ${(context.parsed.y ?? 0).toLocaleString()}`
           },
         },
       },
@@ -83,7 +83,7 @@ export default function TokenUsageOverTime({ data }: TokenUsageOverTimeProps) {
         <CardTitle>Token Usage Over Time</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[350px]">
+        <div className="h-[350px] sm:h-[400px]">
           <Line data={chartData} options={options} />
         </div>
       </CardContent>

@@ -122,14 +122,15 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
                     {sortOrder === "desc" ? <ArrowDown className="h-4 w-4" /> : <ArrowUp className="h-4 w-4" />}
                   </button>
                 </TableHead>
-                <TableHead>Execution ID</TableHead>
-                <TableHead>User ID</TableHead>
-                <TableHead>Model</TableHead>
+                <TableHead>Exec ID</TableHead>
+                <TableHead>AI Model</TableHead>
                 <TableHead className="text-right">Prompt Tokens</TableHead>
-                <TableHead className="text-right">Completion Tokens</TableHead>
+                <TableHead className="text-right">Comp Tokens</TableHead>
                 <TableHead className="text-right">Total Tokens</TableHead>
-                <TableHead className="text-right">Cost</TableHead>
+                <TableHead className="text-right">Total Cost</TableHead>
                 <TableHead>Workflow Name</TableHead>
+                <TableHead>User ID</TableHead>
+                <TableHead>Exec Time</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -143,10 +144,10 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
                         <span className="text-xs text-muted-foreground">{time}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-xs sm:text-sm max-w-[100px] sm:max-w-[120px] truncate" title={row.execution_id}>
+                    <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none" title={row.execution_id}>
                       {row.execution_id}
                     </TableCell>
-                    <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none">{row.user_id}</TableCell>
+
                     <TableCell className="break-words max-w-[120px] sm:max-w-none">
                       <span className="inline-flex items-center gap-1">
                         <span className="text-lg sm:text-xl">🤖</span>
@@ -160,6 +161,8 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
                     </TableCell>
                     <TableCell className="text-right">${row.total_cost.toFixed(5)}</TableCell>
                     <TableCell>{row.workflow_name}</TableCell>
+                    <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none">{row.user_id}</TableCell>
+                    <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none">{row.time}</TableCell>
                   </TableRow>
                 )
               })}

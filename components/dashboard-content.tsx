@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { RefreshCw, Filter } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { RefreshCw, Filter, CalendarIcon } from "lucide-react"
+import { format } from "date-fns"
 import { fetchGoogleSheetData, type AnalyticsRow } from "@/lib/fetch-data"
 import { ThemeToggle } from "@/components/theme-toggle"
 import MetricsCards from "@/components/metrics-cards"
@@ -25,8 +28,8 @@ export default function DashboardContent() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   // Filter states
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
+  const [startDate, setStartDate] = useState<Date>()
+  const [endDate, setEndDate] = useState<Date>()
   const [selectedWorkflow, setSelectedWorkflow] = useState("all")
   // const [searchQuery, setSearchQuery] = useState("")
 
@@ -59,11 +62,15 @@ export default function DashboardContent() {
       // Date filter
       if (startDate && row.timestamp) {
         const rowDate = new Date(row.timestamp)
-        if (rowDate < new Date(startDate)) return false
+        const startDateTime = new Date(startDate)
+        startDateTime.setHours(0, 0, 0, 0)
+        if (rowDate < startDateTime) return false
       }
       if (endDate && row.timestamp) {
         const rowDate = new Date(row.timestamp)
-        if (rowDate > new Date(endDate)) return false
+        const endDateTime = new Date(endDate)
+        endDateTime.setHours(23, 59, 59, 999)
+        if (rowDate > endDateTime) return false
       }
 
       // Workflow filter
@@ -94,7 +101,7 @@ export default function DashboardContent() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-[1400px] space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6 lg:p-8">
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-3">
               <div className="text-3xl sm:text-4xl">🤖📊</div>
@@ -117,58 +124,85 @@ export default function DashboardContent() {
         {/* Filters */}
         <Card>
           <CardContent className="pt-4 sm:pt-6">
-            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-              <div className="space-y-2">
-                <Label htmlFor="start-date">Start Date</Label>
-                <Input
-                  id="start-date"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full min-h-[44px] sm:min-h-[36px]"
-                />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 flex-1">
+                <div className="space-y-2">
+                  <Label>Start Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal min-h-[44px] sm:min-h-[36px]"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {startDate ? format(startDate, "PPP") : "Start date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-2">
+                  <Label>End Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal min-h-[44px] sm:min-h-[36px]"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, "PPP") : "End date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="workflow">Workflow</Label>
+                  <Select value={selectedWorkflow} onValueChange={setSelectedWorkflow}>
+                    <SelectTrigger id="workflow" className="w-full min-h-[44px] sm:min-h-[36px]">
+                      <SelectValue placeholder="All Workflows" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Workflows</SelectItem>
+                      {workflows.map((workflow) => (
+                        <SelectItem key={workflow} value={workflow}>
+                          {workflow}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="end-date">End Date</Label>
-                <Input
-                  id="end-date"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full min-h-[44px] sm:min-h-[36px]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="workflow">Workflow</Label>
-                <Select value={selectedWorkflow} onValueChange={setSelectedWorkflow}>
-                  <SelectTrigger id="workflow" className="w-full min-h-[44px] sm:min-h-[36px]">
-                    <SelectValue placeholder="All Workflows" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Workflows</SelectItem>
-                    {workflows.map((workflow) => (
-                      <SelectItem key={workflow} value={workflow}>
-                        {workflow}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-end gap-2 sm:flex-col sm:items-stretch">
-                <Button
-                  onClick={handleRefresh}
-                  variant="outline"
-                  size="icon"
-                  disabled={loading}
-                  className="min-h-[44px] sm:min-h-[36px] px-3"
-                >
-                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                </Button>
-                <Button className="flex-1 min-h-[44px] sm:min-h-[48px]">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Apply Filters
-                </Button>
-              </div>
+              <div className="flex items-center gap-2">
+  <Button
+    onClick={handleRefresh}
+    variant="outline"
+    disabled={loading}
+    className="min-h-[44px] sm:min-h-[48px] px-3"
+    role="button"
+    aria-label="Refresh"
+  >
+    <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+  </Button>
+  <Button className="flex-1 min-h-[44px] sm:min-h-[48px]">
+    <Filter className="mr-2 h-4 w-4" />
+    Apply Filters
+  </Button>
+</div>
             </div>
           </CardContent>
         </Card>
@@ -177,30 +211,32 @@ export default function DashboardContent() {
         <MetricsCards data={filteredData} />
 
         {/* Charts Grid */}
-        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-          <div className="h-[300px] sm:h-[400px]">
-            <TokenUsageByModel data={filteredData} />
+        <div className="space-y-4 sm:space-y-6">
+          <div className="grid gap-6 sm:gap-6 lg:grid-cols-2 items-stretch">
+            <div className="h-[350px] sm:h-[400px]">
+              <TokenUsageByModel data={filteredData} />
+            </div>
+            <div className="h-[350px] sm:h-[400px]">
+              <TokenUsageOverTime data={filteredData} />
+            </div>
           </div>
-          <div className="h-[300px] sm:h-[400px]">
-            <TokenUsageOverTime data={filteredData} />
-          </div>
-        </div>
 
-        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-          <div className="h-[300px] sm:h-[400px]">
-            <CostBreakdownByModel data={filteredData} />
+          <div className="grid gap-6 sm:gap-6 lg:grid-cols-2 items-stretch">
+            <div className="h-[350px] sm:h-[400px]">
+              <CostBreakdownByModel data={filteredData} />
+            </div>
+            <div className="h-[350px] sm:h-[400px]">
+              <TokenUsageByWorkflow data={filteredData} />
+            </div>
           </div>
-          <div className="h-[300px] sm:h-[400px]">
-            <TokenUsageByWorkflow data={filteredData} />
-          </div>
-        </div>
 
-        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-          <div className="h-[350px] sm:h-[400px]">
-            <WorkflowCostComparison data={filteredData} />
-          </div>
-          <div className="h-[300px] sm:h-[400px]">
-            <WorkflowModelCorrelation data={filteredData} />
+          <div className="grid gap-6 sm:gap-6 lg:grid-cols-2 items-stretch">
+            <div className="h-[350px] sm:h-[400px]">
+              <WorkflowCostComparison data={filteredData} />
+            </div>
+            <div className="h-[350px] sm:h-[400px]">
+              <WorkflowModelCorrelation data={filteredData} />
+            </div>
           </div>
         </div>
 

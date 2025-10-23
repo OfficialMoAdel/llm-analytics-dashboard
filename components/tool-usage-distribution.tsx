@@ -48,7 +48,7 @@ export default function ToolUsageDistribution({ data }: ToolUsageDistributionPro
       tooltip: {
         callbacks: {
           label: (context) => {
-            return `Tokens: ${context.parsed.x.toLocaleString()}`
+            return `Tokens: ${(context.parsed.x ?? 0).toLocaleString()}`
           },
         },
       },
@@ -69,7 +69,7 @@ export default function ToolUsageDistribution({ data }: ToolUsageDistributionPro
         <CardTitle>Tool Usage Distribution</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[350px]">
+        <div className="h-[350px] sm:h-[400px]">
           <Bar data={chartData} options={options} />
         </div>
       </CardContent>

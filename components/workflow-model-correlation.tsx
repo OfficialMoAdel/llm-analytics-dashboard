@@ -71,6 +71,7 @@ export default function WorkflowModelCorrelation({ data }: WorkflowModelCorrelat
     maintainAspectRatio: false,
     plugins: {
       legend: {
+        display: isMobile ? false : true,
         position: "bottom",
         labels: {
           font: { size: isMobile ? 9 : 12 },
@@ -108,8 +109,12 @@ export default function WorkflowModelCorrelation({ data }: WorkflowModelCorrelat
     scales: {
       x: {
         stacked: false,
+        grid: {
+          color: "rgba(255,255,255,0.08)"
+        },
         ticks: {
           font: { size: isMobile ? 9 : 11 },
+          color: "rgba(255,255,255,0.7)",
           maxRotation: 45,
           minRotation: 45, // ADD THIS
           autoSkip: true, // ADD THIS
@@ -118,12 +123,16 @@ export default function WorkflowModelCorrelation({ data }: WorkflowModelCorrelat
       },
       y: {
         beginAtZero: true,
+        grid: {
+          color: "rgba(255,255,255,0.08)"
+        },
         ticks: {
           callback: (value) => {
             const num = Number(value).toLocaleString()
             return isMobile && num.length > 8 ? num.substring(0, 6) + '...' : num
           },
-          font: { size: isMobile ? 9 : 11 }
+          font: { size: isMobile ? 9 : 11 },
+          color: "rgba(255,255,255,0.7)"
         },
       },
     },
@@ -136,7 +145,7 @@ export default function WorkflowModelCorrelation({ data }: WorkflowModelCorrelat
         <p className="text-sm text-muted-foreground">Top 3 Workflows by Model Usage</p>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] sm:h-[400px]">
+        <div className="h-[350px] sm:h-[400px]">
           <Bar data={chartData} options={options} />
         </div>
       </CardContent>

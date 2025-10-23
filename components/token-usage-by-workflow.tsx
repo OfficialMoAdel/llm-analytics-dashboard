@@ -58,14 +58,22 @@ export default function TokenUsageByWorkflow({ data }: TokenUsageByWorkflowProps
     scales: {
       x: {
         beginAtZero: true,
+        grid: {
+          color: "rgba(255,255,255,0.08)"
+        },
         ticks: {
           callback: (value) => value.toLocaleString(),
-          font: { size: isMobile ? 9 : 11 }
+          font: { size: isMobile ? 9 : 11 },
+          color: "rgba(255,255,255,0.7)"
         },
       },
       y: {
+        grid: {
+          color: "rgba(255,255,255,0.08)"
+        },
         ticks: {
           font: { size: isMobile ? 9 : 11 },
+          color: "rgba(255,255,255,0.7)",
           // ADD THIS callback for truncation
           callback: function(value) {
             const label = this.getLabelForValue(Number(value))
@@ -85,7 +93,7 @@ export default function TokenUsageByWorkflow({ data }: TokenUsageByWorkflowProps
         <CardTitle>Token Usage by Workflow</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] sm:h-[400px]">
+        <div className="h-[350px] sm:h-[400px]">
           <Bar data={chartData} options={options} />
         </div>
       </CardContent>

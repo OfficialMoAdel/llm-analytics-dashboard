@@ -67,14 +67,22 @@ export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps
     scales: {
       x: {
         beginAtZero: true,
+        grid: {
+          color: "rgba(255,255,255,0.08)"
+        },
         ticks: {
           callback: (value) => `$${Number(value).toFixed(3)}`,
-          font: { size: isMobile ? 9 : 11 }
+          font: { size: isMobile ? 9 : 11 },
+          color: "rgba(255,255,255,0.7)"
         },
       },
       y: {
+        grid: {
+          color: "rgba(255,255,255,0.08)"
+        },
         ticks: {
           font: { size: isMobile ? 9 : 11 },
+          color: "rgba(255,255,255,0.7)",
           // ADD THIS callback for truncation
           callback: function(value) {
             const label = this.getLabelForValue(Number(value))
@@ -94,7 +102,7 @@ export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps
         <CardTitle>Cost Breakdown by Model</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] sm:h-[400px]">
+        <div className="h-[350px] sm:h-[400px]">
           <Bar data={chartData} options={options} />
         </div>
       </CardContent>
