@@ -97,12 +97,12 @@ export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps
   }
 
   return (
-    <Card>
+    <Card className="flex flex-col">
       <CardHeader>
         <CardTitle>Cost Breakdown by Model</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-[350px] sm:h-[400px]">
+        <CardContent className="flex-1">
+    <div className="h-full min-h-[300px] w-full">
           <Bar data={chartData} options={options} />
         </div>
       </CardContent>

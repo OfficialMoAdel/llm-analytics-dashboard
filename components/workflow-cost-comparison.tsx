@@ -90,12 +90,12 @@ export default function WorkflowCostComparison({ data }: WorkflowCostComparisonP
   }
 
   return (
-    <Card>
+<Card className="flex flex-col">
       <CardHeader>
         <CardTitle>Workflow Cost Comparison</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-[350px] sm:h-[400px]">
+  <CardContent className="flex-1">
+    <div className="h-full min-h-[300px] w-full">
           <Doughnut data={chartData} options={options} />
         </div>
       </CardContent>

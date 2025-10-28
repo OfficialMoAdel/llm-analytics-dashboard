@@ -139,13 +139,13 @@ export default function WorkflowModelCorrelation({ data }: WorkflowModelCorrelat
   }
 
   return (
-    <Card>
+   <Card className="flex flex-col">
       <CardHeader>
         <CardTitle>Workflow-Model Correlation</CardTitle>
         <p className="text-sm text-muted-foreground">Top 3 Workflows by Model Usage</p>
       </CardHeader>
-      <CardContent>
-        <div className="h-[350px] sm:h-[400px]">
+  <CardContent className="flex-1">
+    <div className="h-full min-h-[300px] w-full">
           <Bar data={chartData} options={options} />
         </div>
       </CardContent>

@@ -26,12 +26,10 @@ export default function DashboardContent() {
   const [data, setData] = useState<AnalyticsRow[]>([])
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-
-  // Filter states
+  
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
   const [selectedWorkflow, setSelectedWorkflow] = useState("all")
-  // const [searchQuery, setSearchQuery] = useState("")
 
   const loadData = async () => {
     setLoading(true)
@@ -50,22 +48,20 @@ export default function DashboardContent() {
     loadData()
   }, [])
 
-  // Get unique workflows for filter dropdown
   const workflows = useMemo(() => {
     const unique = new Set(data.map((row) => row.workflow_name).filter(Boolean))
     return Array.from(unique).sort()
   }, [data])
 
-  // Apply filters
   const filteredData = useMemo(() => {
     return data.filter((row) => {
-      // Date filter
       if (startDate && row.timestamp) {
         const rowDate = new Date(row.timestamp)
         const startDateTime = new Date(startDate)
         startDateTime.setHours(0, 0, 0, 0)
         if (rowDate < startDateTime) return false
       }
+
       if (endDate && row.timestamp) {
         const rowDate = new Date(row.timestamp)
         const endDateTime = new Date(endDate)
@@ -73,7 +69,6 @@ export default function DashboardContent() {
         if (rowDate > endDateTime) return false
       }
 
-      // Workflow filter
       if (selectedWorkflow !== "all" && row.workflow_name !== selectedWorkflow) {
         return false
       }
@@ -88,10 +83,10 @@ export default function DashboardContent() {
 
   if (loading && data.length === 0) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <RefreshCw className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-          <p className="mt-2 text-sm text-muted-foreground">Loading analytics data...</p>
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading analytics data...</p>
         </div>
       </div>
     )
@@ -99,151 +94,117 @@ export default function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-[1400px] space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6 lg:p-8">
-        {/* Header */}
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="text-3xl sm:text-4xl">🤖📊</div>
-              <h1 className="text-balance text-2xl sm:text-3xl font-bold tracking-tight">LLM Analytics Dashboard</h1>
-            </div>
-            <p className="mt-2 text-pretty text-sm text-muted-foreground">
-              Monitor and analyze your AI model token usage and costs
-            </p>
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        <div className="flex items-center justify-between mb-8">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+              <span className="text-2xl">🤖📊</span>
+              LLM Analytics Dashboard
+            </h1>
+            <p className="text-muted-foreground">Monitor and analyze your AI model token usage and costs</p>
           </div>
-          <div className="flex items-center gap-3 self-start">
+          <div className="flex items-center gap-4">
             {lastUpdated && (
-              <p className="text-xs text-muted-foreground">Last updated: {lastUpdated.toLocaleTimeString()}</p>
+              <span className="text-sm text-muted-foreground hidden sm:block">
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </span>
             )}
-            <div className="min-h-[44px] min-w-[44px] flex items-center justify-center">
-              <ThemeToggle />
-            </div>
+            <ThemeToggle />
+            
           </div>
         </div>
 
-        {/* Filters */}
-        <Card>
-          <CardContent className="pt-4 sm:pt-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 flex-1">
-                <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal min-h-[44px] sm:min-h-[36px]"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {startDate ? format(startDate, "PPP") : "Start date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={startDate}
-                        onSelect={setStartDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="space-y-2">
-                  <Label>End Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal min-h-[44px] sm:min-h-[36px]"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {endDate ? format(endDate, "PPP") : "End date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={endDate}
-                        onSelect={setEndDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="workflow">Workflow</Label>
-                  <Select value={selectedWorkflow} onValueChange={setSelectedWorkflow}>
-                    <SelectTrigger id="workflow" className="w-full min-h-[44px] sm:min-h-[36px]">
-                      <SelectValue placeholder="All Workflows" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Workflows</SelectItem>
-                      {workflows.map((workflow) => (
-                        <SelectItem key={workflow} value={workflow}>
-                          {workflow}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+        <Card className="mb-8">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr_auto] items-end gap-4">
+              <div className="grid gap-2 w-full sm:w-auto min-w-[200px]">
+                <Label htmlFor="start-date">Start Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="start-date"
+                      variant="outline"
+                      className="justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, "PPP") : "Start date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
+                  </PopoverContent>
+                </Popover>
               </div>
-              <div className="flex items-center gap-2">
-  <Button
-    onClick={handleRefresh}
-    variant="outline"
-    disabled={loading}
-    className="min-h-[44px] sm:min-h-[48px] px-3"
-    role="button"
-    aria-label="Refresh"
-  >
-    <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-  </Button>
-  <Button className="flex-1 min-h-[44px] sm:min-h-[48px]">
-    <Filter className="mr-2 h-4 w-4" />
-    Apply Filters
-  </Button>
-</div>
+
+              <div className="grid gap-2 w-full sm:w-auto min-w-[200px]">
+                <Label htmlFor="end-date">End Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="end-date"
+                      variant="outline"
+                      className="justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, "PPP") : "End date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="grid gap-2 w-full sm:w-auto min-w-[200px]">
+                <Label htmlFor="workflow">Workflow</Label>
+                <Select value={selectedWorkflow} onValueChange={setSelectedWorkflow}>
+                  <SelectTrigger id="workflow">
+                    <SelectValue placeholder="All Workflows" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Workflows</SelectItem>
+                    {workflows.map((workflow) => (
+                      <SelectItem key={workflow} value={workflow}>
+                        {workflow}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-[48px_1fr] gap-3 w-full
+                      lg:flex lg:justify-end lg:items-center lg:gap-2 lg:w-auto lg:col-start-4">
+        <Button variant="outline" size="icon"
+                className="h-10 w-10 rounded-md lg:h-9 lg:w-9">
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+
+        <Button className="w-full lg:w-auto">
+          <Filter className="mr-2 h-4 w-4" />
+          Apply Filters
+        </Button>
+      </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Metrics Cards */}
         <MetricsCards data={filteredData} />
 
-        {/* Charts Grid */}
-        <div className="space-y-4 sm:space-y-6">
-          <div className="grid gap-6 sm:gap-6 lg:grid-cols-2 items-stretch">
-            <div className="h-[350px] sm:h-[400px]">
-              <TokenUsageByModel data={filteredData} />
-            </div>
-            <div className="h-[350px] sm:h-[400px]">
-              <TokenUsageOverTime data={filteredData} />
-            </div>
-          </div>
-
-          <div className="grid gap-6 sm:gap-6 lg:grid-cols-2 items-stretch">
-            <div className="h-[350px] sm:h-[400px]">
-              <CostBreakdownByModel data={filteredData} />
-            </div>
-            <div className="h-[350px] sm:h-[400px]">
-              <TokenUsageByWorkflow data={filteredData} />
-            </div>
-          </div>
-
-          <div className="grid gap-6 sm:gap-6 lg:grid-cols-2 items-stretch">
-            <div className="h-[350px] sm:h-[400px]">
-              <WorkflowCostComparison data={filteredData} />
-            </div>
-            <div className="h-[350px] sm:h-[400px]">
-              <WorkflowModelCorrelation data={filteredData} />
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mt-8">
+          <TokenUsageByModel data={filteredData} />
+          <TokenUsageOverTime data={filteredData} />
+          <CostBreakdownByModel data={filteredData} />
+          <TokenUsageByWorkflow data={filteredData} />
+          <WorkflowCostComparison data={filteredData} />
+          <WorkflowModelCorrelation data={filteredData} />
+          <div className="md:col-span-2 lg:col-span-2">
+            <WorkflowTokenUsageOverTime data={filteredData} />
           </div>
         </div>
 
-        <WorkflowTokenUsageOverTime data={filteredData} />
-
-        {/* Detailed Data Table */}
-        <DetailedDataTable data={filteredData} />
+        <div className="mt-8">
+          <DetailedDataTable data={filteredData} />
+        </div>
       </div>
     </div>
   )

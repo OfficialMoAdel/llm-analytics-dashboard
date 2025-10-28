@@ -88,12 +88,12 @@ export default function TokenUsageByWorkflow({ data }: TokenUsageByWorkflowProps
   }
 
   return (
-    <Card>
+<Card className="flex flex-col">
       <CardHeader>
         <CardTitle>Token Usage by Workflow</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="h-[350px] sm:h-[400px]">
+  <CardContent className="flex-1">
+    <div className="h-full min-h-[300px] w-full">
           <Bar data={chartData} options={options} />
         </div>
       </CardContent>

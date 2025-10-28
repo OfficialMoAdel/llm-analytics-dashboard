@@ -116,13 +116,13 @@ export default function WorkflowTokenUsageOverTime({ data }: WorkflowTokenUsageO
   }
 
   return (
-    <Card>
+<Card className="flex flex-col">
       <CardHeader>
         <CardTitle>Workflow Token Usage Over Time</CardTitle>
         <p className="text-sm text-muted-foreground">Token Usage Trends for Top 3 Workflows</p>
       </CardHeader>
-      <CardContent>
-        <div className="h-[250px] sm:h-[300px] md:h-[350px]">
+  <CardContent className="flex-1">
+    <div className="h-full min-h-[300px] w-full">
           <Line data={chartData} options={options} />
         </div>
       </CardContent>
