@@ -1,3 +1,4 @@
+// في بداية ملف fetch-data.ts
 export interface AnalyticsRow {
   execution_id: string
   timestamp: string
@@ -15,7 +16,6 @@ export interface AnalyticsRow {
   time: string
   tool?: string
 }
-
 export async function fetchGoogleSheetData(): Promise<AnalyticsRow[]> {
   try {
     const sheetId = "1Mzb4S2hI4nWQn8I7ysU4E-C6V8Uz2zF1R2j2bWe0F0k"
@@ -33,25 +33,44 @@ export async function fetchGoogleSheetData(): Promise<AnalyticsRow[]> {
 
     // Parse the Google Sheets response
     if (json.table && json.table.rows) {
-      for (const row of json.table.rows) {
+      // ← تخطي السطر الأول (index 0) لأنه عناوين الأعمدة
+      for (let i = 1; i < json.table.rows.length; i++) {
+        const row = json.table.rows[i]
         if (!row.c) continue
 
+        // دالة مساعدة لاستخراج القيمة من الخلية
+        const getCellValue = (cell: any, asString = false): any => {
+          if (!cell) return asString ? "" : null
+          
+          // أولوية للقيمة المنسقة (.f) للنصوص والأرقام الكبيرة
+          if (cell.f !== undefined && cell.f !== null) {
+            return asString ? String(cell.f) : cell.f
+          }
+          
+          // ثم القيمة الخام (.v)
+          if (cell.v !== undefined && cell.v !== null) {
+            return asString ? String(cell.v) : cell.v
+          }
+          
+          return asString ? "" : null
+        }
+
         const rowData: AnalyticsRow = {
-          execution_id: row.c[0]?.v || "",
-          timestamp: row.c[1]?.f || row.c[1]?.v || "",
-          workflow_id: row.c[2]?.v || "",
-          workflow_name: row.c[3]?.v || "",
-          llm_model: row.c[4]?.v || "",
-          input_tokens: Number(row.c[5]?.v) || 0,
-          completion_tokens: Number(row.c[6]?.v) || 0,
-          input_price: Number(row.c[7]?.v) || 0,
-          output_price: Number(row.c[8]?.v) || 0,
-          input_cost: Number(row.c[9]?.v) || 0,
-          output_cost: Number(row.c[10]?.v) || 0,
-          total_cost: Number(row.c[11]?.v) || 0,
-          user_id: row.c[12]?.v || "",
-          time: row.c[13]?.v || "",
-          tool: row.c[14]?.v || undefined,
+          execution_id: getCellValue(row.c[0], true),
+          timestamp: getCellValue(row.c[1], true),
+          workflow_id: getCellValue(row.c[2], true),
+          workflow_name: getCellValue(row.c[3], true),
+          llm_model: getCellValue(row.c[4], true),
+          input_tokens: Number(getCellValue(row.c[5])) || 0,
+          completion_tokens: Number(getCellValue(row.c[6])) || 0,
+          input_price: Number(getCellValue(row.c[7])) || 0,
+          output_price: Number(getCellValue(row.c[8])) || 0,
+          input_cost: Number(getCellValue(row.c[9])) || 0,
+          output_cost: Number(getCellValue(row.c[10])) || 0,
+          total_cost: Number(getCellValue(row.c[11])) || 0,
+          user_id: getCellValue(row.c[12], true),
+          time: getCellValue(row.c[13], true),
+          tool: getCellValue(row.c[14], true) || undefined,
         }
 
         rows.push(rowData)

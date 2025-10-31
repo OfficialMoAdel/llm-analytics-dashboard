@@ -29,6 +29,16 @@
   --chart-3: hsl(256 92% 76%);
   --chart-4: hsl(43 96% 56%);
   --chart-5: hsl(172 66% 50%);
+  --chart-6: hsl(12 90% 60%);
+  --chart-7: hsl(280 75% 65%);
+  --chart-8: hsl(200 85% 60%);
+
+  /* ألوان عامة للرسوم */
+  --chart-text: var(--foreground);
+  --chart-axis: hsl(0 0% 45%);
+  --chart-grid: hsl(0 0% 85%);
+  --chart-border: var(--background);
+  
   --sidebar: hsl(0 0% 98.8235%);
   --sidebar-foreground: hsl(0 0% 43.9216%);
   --sidebar-primary: hsl(151.3274 66.8639% 66.8627%);
@@ -77,6 +87,13 @@
   --chart-3: hsl(256 92% 76%);
   --chart-4: hsl(43 96% 56%);
   --chart-5: hsl(172 66% 50%);
+  --chart-6: hsl(12 70% 58%);
+  --chart-7: hsl(280 60% 65%);
+  --chart-8: hsl(200 80% 62%);
+  --chart-text: var(--foreground);
+  --chart-axis: hsl(0 0% 70%);
+  --chart-grid: hsl(0 0% 20%);
+  --chart-border: var(--card);
   --sidebar: hsl(0 0% 7.0588%);
   --sidebar-foreground: hsl(0 0% 53.7255%);
   --sidebar-primary: hsl(154.898 100.0000% 19.2157%);

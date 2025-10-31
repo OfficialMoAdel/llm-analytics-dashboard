@@ -1,120 +1,149 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { AnalyticsRow } from "@/lib/fetch-data"
-import { useMemo } from "react"
-import { Pie } from "react-chartjs-2"
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, type ChartOptions } from "chart.js"
-import { useIsMobile } from "@/hooks/use-mobile"
-import React from "react"
+import React, { useMemo, useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { AnalyticsRow } from "@/lib/fetch-data";
+import { Doughnut } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  type ChartOptions,
+} from "chart.js";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useTheme } from "next-themes";
 
-ChartJS.register(ArcElement, Tooltip, Legend)
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface TokenUsageByModelProps {
-  data: AnalyticsRow[]
+  data: AnalyticsRow[];
 }
 
-const COLORS = [
-  "#3b82f6", // blue
-  "#f59e0b", // amber
-  "#10b981", // emerald
-  "#ef4444", // red
-  "#8b5cf6", // violet
-  "#ec4899", // pink
-  "#06b6d4", // cyan
-  "#f97316", // orange
-]
+// helpers: read CSS variables from globals.css and build series/colors
+const cssVar = (name: string) =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
-export default React.memo(function TokenUsageByModel({ data }: TokenUsageByModelProps)  {
-  const isMobile = useIsMobile()
+const MAX_LABEL = 20;
+const truncate20 = (s: string) => (s?.length > MAX_LABEL ? s.slice(0, MAX_LABEL) + "..." : s);
+
+function useChartVars() {
+  const { theme } = useTheme();
+  const [vars, setVars] = useState({
+    series: [] as string[],
+    text: "#666",
+    border: "#fff",
+  });
+
+  useEffect(() => {
+    const series = [
+      cssVar("--chart-1"),
+      cssVar("--chart-2"),
+      cssVar("--chart-3"),
+      cssVar("--chart-4"),
+      cssVar("--chart-5"),
+      cssVar("--chart-6"),
+      cssVar("--chart-7"),
+      cssVar("--chart-8"),
+    ].filter(Boolean);
+
+    const text = cssVar("--chart-text") || cssVar("--foreground") || "#666";
+    const border =
+      cssVar("--chart-border") || cssVar("--card") || "#ffffff";
+
+    setVars({ series, text, border });
+  }, [theme]);
+
+  return vars;
+}
+
+export default React.memo(function TokenUsageByModel({
+  data,
+}: TokenUsageByModelProps) {
+  const isMobile = useIsMobile();
+  const colors = useChartVars();
 
   const chartData = useMemo(() => {
-    const modelTokens = data.reduce(
-      (acc, row) => {
-        const tokens = row.input_tokens + row.completion_tokens
-        acc[row.llm_model] = (acc[row.llm_model] || 0) + tokens
-        return acc
-      },
-      {} as Record<string, number>,
-    )
+    const modelTokens = data.reduce((acc, row) => {
+      const tokens = row.input_tokens + row.completion_tokens;
+      acc[row.llm_model] = (acc[row.llm_model] || 0) + tokens;
+      return acc;
+    }, {} as Record<string, number>);
 
-    const sorted = Object.entries(modelTokens).sort((a, b) => b[1] - a[1])
+    const sorted = Object.entries(modelTokens).sort((a, b) => b[1] - a[1]);
+    const labels = sorted.map(([model]) => model);
+    const values = sorted.map(([, v]) => v);
+
+    const palette = labels.map(
+      (_, i) => colors.series[i % Math.max(colors.series.length, 1)]
+    );
 
     return {
-      labels: sorted.map(([model]) => model),
+      labels,
       datasets: [
         {
-          data: sorted.map(([, tokens]) => tokens),
-          backgroundColor: COLORS,
-          borderColor: "#ffffff",
+          data: values,
+          backgroundColor: palette,
+          borderColor: colors.border,
           borderWidth: 2,
         },
       ],
-    }
-  }, [data])
+    };
+  }, [data, colors]);
 
-  const options: ChartOptions<"pie"> = {
+  const options: ChartOptions<"doughnut"> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: isMobile ? false : true,
-        position: "bottom",
+        display: !isMobile,
+        position: isMobile ? "bottom" : "right",
         labels: {
+          color: colors.text,
           padding: isMobile ? 8 : 15,
-          font: {
-            size: isMobile ? 9 : 11
-          },
+          font: { size: isMobile ? 10 : 12 },
           boxWidth: isMobile ? 10 : 12,
-          // ADD THIS - Truncate long model names
           generateLabels: (chart) => {
-            const data = chart.data
+            const data = chart.data;
             if (data.labels && data.labels.length && data.datasets.length) {
-              return data.labels.map((label, i) => {
-                const maxLength = isMobile ? 18 : 30
-                const labelStr = String(label)
-                const truncated = labelStr.length > maxLength
-                  ? labelStr.substring(0, maxLength) + '...'
-                  : labelStr
-
-                return {
-                  text: truncated,
-                  fillStyle: Array.isArray(data.datasets[0].backgroundColor)
-                    ? data.datasets[0].backgroundColor[i] as string
-                    : data.datasets[0].backgroundColor as string,
-                  hidden: false,
-                  index: i,
-                }
-              })
+              return (data.labels as (string | string[])[]).map((label, i) => {
+                const text = truncate20(String(label));
+                const fill = Array.isArray(data.datasets[0].backgroundColor)
+                  ? (data.datasets[0].backgroundColor as string[])[i]
+                  : (data.datasets[0].backgroundColor as string);
+                return { text, fillStyle: fill, hidden: false, index: i };
+              });
             }
-            return []
+            return [];
           },
         },
       },
       tooltip: {
         callbacks: {
-          label: (context) => {
-            const label = context.label || ""
-            const value = context.parsed || 0
-            const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0)
-            const percentage = ((value / total) * 100).toFixed(1)
-            return `${label}: ${value.toLocaleString()} (${percentage}%)`
+          label: (ctx) => {
+            const rawLabel = String(ctx.label ?? "");
+            const label = truncate20(rawLabel);
+            const value = Number(ctx.parsed ?? 0);
+            const total = (ctx.dataset.data as number[]).reduce((a, b) => a + b, 0);
+            const pct = total ? ((value / total) * 100).toFixed(1) : "0.0";
+            return `${label}: ${value.toLocaleString()} (${pct}%)`;
           },
         },
       },
     },
-  }
+    cutout: "60%",
+  };
 
   return (
-<Card className="flex flex-col">
+    <Card className="flex flex-col">
       <CardHeader>
         <CardTitle>Token Usage by Model</CardTitle>
       </CardHeader>
-  <CardContent className="flex-1">
-    <div className="h-full min-h-[300px] w-full">
-          <Pie data={chartData} options={options} />
+      <CardContent className="flex-1">
+        <div className="h-full min-h-[300px] w-full">
+          <Doughnut data={chartData} options={options} />
         </div>
       </CardContent>
     </Card>
-  )
-} )
+  );
+});

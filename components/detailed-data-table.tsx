@@ -12,6 +12,59 @@ interface DetailedDataTableProps {
   data: AnalyticsRow[]
 }
 
+// دالة لمعالجة تنسيقات التاريخ المختلفة
+function parseMultiFormatDate(timestamp: string): Date {
+  // محاولة التنسيق ISO أولاً (2025-07-04 18:45:14)
+  let date = new Date(timestamp)
+  if (!isNaN(date.getTime())) {
+    return date
+  }
+
+  // محاولة تنسيق DD/MM/YYYY HH:mm:ss أو DD/MM/YYYY HH:mm:ss AM/PM
+  const dmyPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})(?:\s+(AM|PM))?$/i
+  let match = timestamp.match(dmyPattern)
+  
+  if (match) {
+    const [, day, month, year, hours, minutes, seconds, ampm] = match
+    let hour = parseInt(hours)
+    
+    // تحويل من 12 ساعة إلى 24 ساعة إذا وجدت AM/PM
+    if (ampm) {
+      if (ampm.toUpperCase() === 'PM' && hour !== 12) hour += 12
+      if (ampm.toUpperCase() === 'AM' && hour === 12) hour = 0
+    }
+    
+    return new Date(
+      parseInt(year),
+      parseInt(month) - 1,
+      parseInt(day),
+      hour,
+      parseInt(minutes),
+      parseInt(seconds)
+    )
+  }
+
+  // محاولة تنسيق MM/DD/YYYY HH:mm:ss
+  const mdyPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})$/
+  match = timestamp.match(mdyPattern)
+  
+  if (match) {
+    const [, month, day, year, hours, minutes, seconds] = match
+    return new Date(
+      parseInt(year),
+      parseInt(month) - 1,
+      parseInt(day),
+      parseInt(hours),
+      parseInt(minutes),
+      parseInt(seconds)
+    )
+  }
+
+  // إذا فشل كل شيء، إرجاع التاريخ الحالي
+  console.warn(`Unable to parse date: ${timestamp}`)
+  return new Date()
+}
+
 export default function DetailedDataTable({ data }: DetailedDataTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
@@ -21,8 +74,8 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
   const sortedAndFilteredData = useMemo(() => {
     // First, sort the data by time
     const sorted = [...data].sort((a, b) => {
-      const timeA = new Date(a.timestamp).getTime()
-      const timeB = new Date(b.timestamp).getTime()
+      const timeA = parseMultiFormatDate(a.timestamp).getTime()
+      const timeB = parseMultiFormatDate(b.timestamp).getTime()
       return sortOrder === "desc" ? timeB - timeA : timeA - timeB
     })
 
@@ -66,7 +119,7 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
   }
 
   const formatDateTime = (timestamp: string) => {
-    const date = new Date(timestamp)
+    const date = parseMultiFormatDate(timestamp)
     return {
       date: date.toLocaleDateString(),
       time: date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),

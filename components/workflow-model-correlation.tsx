@@ -2,152 +2,151 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { AnalyticsRow } from "@/lib/fetch-data"
-import { useMemo } from "react"
+import React, { useMemo } from "react"
 import { Bar } from "react-chartjs-2"
-import type { ChartOptions } from "chart.js"
+import {
+  Chart as ChartJS,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  Legend,
+  Tooltip,
+  Title,
+  ChartOptions,
+} from "chart.js"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useChartColors, truncate20 } from "@/hooks/use-chart-colors"
 
-interface WorkflowModelCorrelationProps {
+ChartJS.register(BarElement, CategoryScale, LinearScale, Legend, Tooltip, Title)
+
+interface Props {
   data: AnalyticsRow[]
 }
 
-export default function WorkflowModelCorrelation({ data }: WorkflowModelCorrelationProps) {
+export default function WorkflowModelCorrelation({ data }: Props) {
   const isMobile = useIsMobile()
+  const colors = useChartColors()
 
-  const chartData = useMemo(() => {
-    // Get top 3 workflows
-    const workflowTokens = data.reduce(
-      (acc, row) => {
-        const workflow = row.workflow_name || "Unknown"
-        const tokens = row.input_tokens + row.completion_tokens
-        acc[workflow] = (acc[workflow] || 0) + tokens
-        return acc
-      },
-      {} as Record<string, number>,
-    )
+  const { labels, datasets } = useMemo(() => {
+    // اجمالي التوكن لكل وركفلو
+    const workflowTotals = data.reduce((acc, row) => {
+      const w = row.workflow_name || "Unknown"
+      const t = (row.input_tokens || 0) + (row.completion_tokens || 0)
+      acc[w] = (acc[w] || 0) + t
+      return acc
+    }, {} as Record<string, number>)
 
-    const topWorkflows = Object.entries(workflowTokens)
+    // أعلى 3 وركفلو
+    const topWorkflows = Object.entries(workflowTotals)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
-      .map(([workflow]) => workflow)
+      .map(([w]) => w)
 
-    // Get model usage for each workflow
-    const workflowModelData: Record<string, Record<string, number>> = {}
-
-    data.forEach((row) => {
-      const workflow = row.workflow_name || "Unknown"
-      if (!topWorkflows.includes(workflow)) return
-
-      if (!workflowModelData[workflow]) {
-        workflowModelData[workflow] = {}
-      }
-
-      const tokens = row.input_tokens + row.completion_tokens
-      workflowModelData[workflow][row.llm_model] = (workflowModelData[workflow][row.llm_model] || 0) + tokens
-    })
-
-    // Get all unique models
-    const allModels = new Set<string>()
-    Object.values(workflowModelData).forEach((models) => {
-      Object.keys(models).forEach((model) => allModels.add(model))
-    })
-
-    const chartColors = ["#4ade80", "#60a5fa", "#a78bfa", "#fbbf24", "#2dd4bf"]
-
-    const datasets = Array.from(allModels).map((model, index) => ({
-      label: model,
-      data: topWorkflows.map((workflow) => workflowModelData[workflow]?.[model] || 0),
-      backgroundColor: chartColors[index % chartColors.length],
-    }))
-
-    return {
-      labels: topWorkflows,
-      datasets,
+    // لكل وركفلو من الأعلى 3، احسب مجموع التوكن لكل موديل
+    const modelByWorkflow: Record<string, Record<string, number>> = {}
+    for (const row of data) {
+      const w = row.workflow_name || "Unknown"
+      if (!topWorkflows.includes(w)) continue
+      const m = row.llm_model || "Unknown"
+      const t = (row.input_tokens || 0) + (row.completion_tokens || 0)
+      modelByWorkflow[w] ??= {}
+      modelByWorkflow[w][m] = (modelByWorkflow[w][m] || 0) + t
     }
-  }, [data])
 
-  const options: ChartOptions<"bar"> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: isMobile ? false : true,
-        position: "bottom",
-        labels: {
-          font: { size: isMobile ? 9 : 12 },
-          padding: isMobile ? 8 : 15,
-          boxWidth: isMobile ? 10 : 12,
-          // ADD truncation for model names
-          generateLabels: (chart) => {
-            const datasets = chart.data.datasets
-            return datasets.map((dataset, i) => {
-              const label = dataset.label || ''
-              const maxLength = isMobile ? 18 : 30
-              const truncated = label.length > maxLength
-                ? label.substring(0, maxLength) + '...'
-                : label
-              return {
-                text: truncated,
-                fillStyle: dataset.backgroundColor as string,
-                hidden: false,
-                index: i,
-                datasetIndex: i,
-              }
-            })
+    // جميع الموديلات عبر الأعلى 3
+    const allModels = Array.from(
+      new Set(
+        topWorkflows.flatMap((w) => Object.keys(modelByWorkflow[w] || {}))
+      )
+    )
+
+    const lbls = topWorkflows
+    const sets = allModels.map((model, idx) => {
+      const color = colors.series[idx % colors.series.length] || "#60a5fa"
+      const bg = colors.alpha[idx % colors.alpha.length] || "rgba(96,165,250,0.18)"
+      return {
+        label: model,
+        data: lbls.map((w) => modelByWorkflow[w]?.[model] || 0),
+        backgroundColor: bg,
+        borderColor: color,
+        borderWidth: 1.5,
+      }
+    })
+
+    return { labels: lbls, datasets: sets }
+  }, [data, colors.series, colors.alpha])
+
+  const options: ChartOptions<"bar"> = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: !isMobile,
+          position: "bottom",
+          labels: {
+            color: colors.text,          // لون نص الليجند
+            padding: isMobile ? 8 : 14,
+            boxWidth: isMobile ? 10 : 12,
+            font: { size: isMobile ? 10 : 12 },
+          },
+        },
+        tooltip: {
+          mode: "index",
+          intersect: false,
+          callbacks: {
+            label(ctx) {
+              const v = Number(ctx.parsed.y || 0)
+              return `${ctx.dataset.label}: ${v.toLocaleString()}`
+            },
+          },
+        },
+        title: {
+          display: false,
+          text: "",
+          color: colors.text,
+        },
+      },
+      scales: {
+        x: {
+          stacked: false,
+          grid: { color: colors.grid },       // لون الشبكة
+          border: { color: colors.axis },     // لون خط المحور
+          ticks: {
+            color: colors.text,               // لون نص التكات
+            font: { size: isMobile ? 10 : 11 },
+            maxRotation: 45,
+            minRotation: 45,
+            autoSkip: true,
+            callback(value: any) {
+              // @ts-ignore
+              const label = this.getLabelForValue?.(Number(value)) ?? String(value)
+              return truncate20(String(label))
+            },
+          },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: colors.grid },
+          border: { color: colors.axis },
+          ticks: {
+            color: colors.text,
+            font: { size: isMobile ? 10 : 11 },
+            callback: (v) => Number(v).toLocaleString(),
           },
         },
       },
-      tooltip: {
-        callbacks: {
-          label: (context) => {
-            const value = context.parsed?.y || 0
-            return `${context.dataset.label}: ${value.toLocaleString()} tokens`
-          },
-        },
-      },
-    },
-    scales: {
-      x: {
-        stacked: false,
-        grid: {
-          color: "rgba(255,255,255,0.08)"
-        },
-        ticks: {
-          font: { size: isMobile ? 9 : 11 },
-          color: "rgba(255,255,255,0.7)",
-          maxRotation: 45,
-          minRotation: 45, // ADD THIS
-          autoSkip: true, // ADD THIS
-          maxTicksLimit: isMobile ? 3 : undefined, // ADD THIS
-        }
-      },
-      y: {
-        beginAtZero: true,
-        grid: {
-          color: "rgba(255,255,255,0.08)"
-        },
-        ticks: {
-          callback: (value) => {
-            const num = Number(value).toLocaleString()
-            return isMobile && num.length > 8 ? num.substring(0, 6) + '...' : num
-          },
-          font: { size: isMobile ? 9 : 11 },
-          color: "rgba(255,255,255,0.7)"
-        },
-      },
-    },
-  }
+    }),
+    [isMobile, colors.text, colors.grid, colors.axis]
+  )
 
   return (
-   <Card className="flex flex-col">
+    <Card>
       <CardHeader>
-        <CardTitle>Workflow-Model Correlation</CardTitle>
-        <p className="text-sm text-muted-foreground">Top 3 Workflows by Model Usage</p>
+        <CardTitle>Workflow–Model Correlation</CardTitle>
       </CardHeader>
-  <CardContent className="flex-1">
-    <div className="h-full min-h-[300px] w-full">
-          <Bar data={chartData} options={options} />
-        </div>
+      <CardContent className="h-[320px] sm:h-[360px]">
+        <Bar data={{ labels, datasets }} options={options} />
       </CardContent>
     </Card>
   )
