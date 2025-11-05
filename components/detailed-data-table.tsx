@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { AnalyticsRow } from "@/lib/fetch-data"
 import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from "lucide-react"
+import { ModelDisplay } from "@/utils/model-icon-map"
 
 interface DetailedDataTableProps {
   data: AnalyticsRow[]
@@ -242,10 +243,7 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
                     </TableCell>
 
                     <TableCell className="break-words max-w-[120px] sm:max-w-none">
-                      <span className="inline-flex items-center gap-1">
-                        <span className="text-lg sm:text-xl">🤖</span>
-                        <span className="text-xs sm:text-sm break-words">{row.llm_model}</span>
-                      </span>
+                      <ModelDisplay modelName={row.llm_model} />
                     </TableCell>
                     <TableCell className="text-right">{row.input_tokens.toLocaleString()}</TableCell>
                     <TableCell className="text-right">{row.completion_tokens.toLocaleString()}</TableCell>
@@ -254,16 +252,13 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
                     </TableCell>
                     <TableCell className="text-right">${row.total_cost.toFixed(5)}</TableCell>
                     <TableCell>{row.workflow_name}</TableCell>
-                <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none">
-  {row.user_id && row.user_id.trim() ? (
-    <span title={row.user_id}>{row.user_id}</span>
-  ) : (
-    <span className="text-muted-foreground italic text-xs">(no data)</span>
-  )}
-</TableCell>
-
-
-
+                    <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none">
+                      {row.user_id && row.user_id.trim() ? (
+                        <span title={row.user_id}>{row.user_id}</span>
+                      ) : (
+                        <span className="text-muted-foreground italic text-xs">(no data)</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none">{row.time}</TableCell>
                   </TableRow>
                 )

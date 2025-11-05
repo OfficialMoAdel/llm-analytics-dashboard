@@ -8,7 +8,7 @@ import type { ChartOptions } from "chart.js";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { createChartTheme, getChartColors } from "@/lib/chart-utils";
 
-const truncate20 = (s: string) => (s?.length > 20 ? s.slice(0, 20) + "..." : s);
+const truncate12 = (s: string) => (s?.length > 12 ? s.slice(0, 12) + "..." : s);
 
 interface TokenUsageByWorkflowProps {
   data: AnalyticsRow[];
@@ -82,7 +82,7 @@ export default function TokenUsageByWorkflow({ data }: TokenUsageByWorkflowProps
           font: { size: isMobile ? 9 : 11 },
           callback: function (this: any, value: any) {
             const label = this.getLabelForValue(Number(value));
-            return truncate20(label);
+            return truncate12(label);
           },
         },
       },
