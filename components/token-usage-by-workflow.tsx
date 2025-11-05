@@ -6,7 +6,9 @@ import React, { useMemo } from "react";
 import { Bar } from "react-chartjs-2";
 import type { ChartOptions } from "chart.js";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useChartColors, truncate20 } from "@/hooks/use-chart-colors";
+import { createChartTheme, getChartColors } from "@/lib/chart-utils";
+
+const truncate20 = (s: string) => (s?.length > 20 ? s.slice(0, 20) + "..." : s);
 
 interface TokenUsageByWorkflowProps {
   data: AnalyticsRow[];
@@ -14,7 +16,8 @@ interface TokenUsageByWorkflowProps {
 
 export default function TokenUsageByWorkflow({ data }: TokenUsageByWorkflowProps) {
   const isMobile = useIsMobile();
-  const colors = useChartColors();
+  const theme = createChartTheme();
+  const chartColors = getChartColors();
 
   const chartData = useMemo(() => {
     const workflowTokens = data.reduce((acc, row) => {
@@ -29,7 +32,7 @@ export default function TokenUsageByWorkflow({ data }: TokenUsageByWorkflowProps
     const vals = sorted.map(([, tokens]) => tokens);
 
     const palette = labels.map(
-      (_, i) => colors.series[i % Math.max(colors.series.length, 1)]
+      (_, i) => chartColors[i % chartColors.length] || theme.toAlpha(chartColors[0], 0.8)
     );
 
     return {
@@ -39,12 +42,12 @@ export default function TokenUsageByWorkflow({ data }: TokenUsageByWorkflowProps
           label: "Total Tokens",
           data: vals,
           backgroundColor: palette,
-          borderColor: colors.border,
+          borderColor: theme.primary,
           borderWidth: 1,
         },
       ],
     };
-  }, [data, colors]);
+  }, [data, theme, chartColors]);
 
   const options: ChartOptions<"bar"> = {
     indexAxis: "y",
@@ -59,27 +62,31 @@ export default function TokenUsageByWorkflow({ data }: TokenUsageByWorkflowProps
       },
     },
     scales: {
-  x: {
-    beginAtZero: true,
-    grid: { color: colors.axis },     // كان colors.grid
-    ticks: {
-      color: colors.grid,             // كان colors.axis
-      font: { size: isMobile ? 9 : 11 },
-      callback: (v) => Number(v).toLocaleString(),
-    },
-  },
-  y: {
-    grid: { color: colors.axis },     // كان colors.grid
-    ticks: {
-      color: colors.grid,             // كان colors.axis
-      font: { size: isMobile ? 9 : 11 },
-      callback: function (this: any, value: any) {
-        const label = this.getLabelForValue(Number(value));
-        return label.length > 18 ? label.slice(0, 18) + "..." : label;
+      x: {
+        beginAtZero: true,
+        grid: {
+          color: theme.grid,
+        },
+        ticks: {
+          color: theme.text,
+          font: { size: isMobile ? 9 : 11 },
+          callback: (v) => Number(v).toLocaleString(),
+        },
+      },
+      y: {
+        grid: {
+          color: theme.grid,
+        },
+        ticks: {
+          color: theme.text,
+          font: { size: isMobile ? 9 : 11 },
+          callback: function (this: any, value: any) {
+            const label = this.getLabelForValue(Number(value));
+            return truncate20(label);
+          },
+        },
       },
     },
-  },
-}
   };
 
   return (

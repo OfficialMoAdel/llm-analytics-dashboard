@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useEffect, useState } from "react";
+import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AnalyticsRow } from "@/lib/fetch-data";
 import { Line } from "react-chartjs-2";
@@ -16,9 +16,9 @@ import {
   Filler,
   type ChartOptions,
 } from "chart.js";
-import { useTheme } from "next-themes";
+import { createChartTheme, getChartColors } from "@/lib/chart-utils";
+import { filterValidDates } from "@/lib/chart-theme";
 
-// Register Chart.js pieces (safe to call once)
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -30,52 +30,8 @@ ChartJS.register(
   Filler
 );
 
-// ------- Helpers (ألوان + قص) -------
-const cssVar = (name: string) =>
-  getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-
-const toAlpha = (color: string, a = 0.18) => {
-  const ctx = document.createElement("canvas").getContext("2d")!;
-  ctx.fillStyle = color; // hex/rgb/hsl
-  const rgb = ctx.fillStyle as string;
-  const m = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
-  return m ? `rgba(${m[1]}, ${m[2]}, ${m[3]}, ${a})` : color;
-};
-
 const truncate20 = (s: string) => (s?.length > 20 ? s.slice(0, 20) + "..." : s);
 
-function useChartVars() {
-  const { theme } = useTheme();
-  const [v, setV] = useState({
-    series: [] as string[],
-    alpha: [] as string[],
-    axis: "#777",
-    grid: "#ccc",
-    text: "#888",
-    border: "#fff",
-  });
-
-  useEffect(() => {
-    const series = [
-      cssVar("--chart-1"),
-      cssVar("--chart-2"),
-      cssVar("--chart-3"),
-    ].filter(Boolean);
-
-    setV({
-      series,
-      alpha: series.map((c) => toAlpha(c, 0.18)),
-      axis: cssVar("--chart-axis") || cssVar("--foreground") || "#777",
-      grid: cssVar("--chart-grid") || "rgba(0,0,0,0.1)",
-      text: cssVar("--chart-text") || cssVar("--foreground") || "#888",
-      border: cssVar("--chart-border") || cssVar("--card") || "#fff",
-    });
-  }, [theme]);
-
-  return v;
-}
-
-// ------- Component -------
 interface WorkflowTokenUsageOverTimeProps {
   data: AnalyticsRow[];
 }
@@ -83,11 +39,13 @@ interface WorkflowTokenUsageOverTimeProps {
 export default function WorkflowTokenUsageOverTime({
   data,
 }: WorkflowTokenUsageOverTimeProps) {
-  const colors = useChartVars();
+  const theme = createChartTheme();
+  const chartColors = getChartColors();
 
   const chartData = useMemo(() => {
-    // 1) Top 3 workflows by total tokens
-    const workflowTotals = data.reduce((acc, row) => {
+    const validData = filterValidDates(data, "timestamp");
+
+    const workflowTotals = validData.reduce((acc, row) => {
       const w = row.workflow_name || "Unknown";
       const t = row.input_tokens + row.completion_tokens;
       acc[w] = (acc[w] || 0) + t;
@@ -99,102 +57,108 @@ export default function WorkflowTokenUsageOverTime({
       .slice(0, 3)
       .map(([w]) => w);
 
-    // 2) Aggregate per day per workflow
     const daily: Record<string, Record<string, number>> = {};
-    data.forEach((row) => {
+    validData.forEach((row) => {
       const w = row.workflow_name || "Unknown";
       if (!topWorkflows.includes(w)) return;
-      const d = new Date(row.timestamp).toLocaleDateString();
+
+      const date = new Date(row.timestamp);
+      if (isNaN(date.getTime()) || date.toString() === "Invalid Date") {
+        return;
+      }
+
+      const d = date.toLocaleDateString();
       daily[w] ||= {};
       const t = row.input_tokens + row.completion_tokens;
       daily[w][d] = (daily[w][d] || 0) + t;
     });
 
-    // 3) Sorted unique dates
     const allDates = new Set<string>();
     Object.values(daily).forEach((m) => Object.keys(m).forEach((d) => allDates.add(d)));
     const sortedDates = Array.from(allDates).sort(
       (a, b) => new Date(a).getTime() - new Date(b).getTime()
     );
 
-    // 4) Build datasets with theme colors
-    const series = colors.series.length
-      ? colors.series
-      : ["#3b82f6", "#f59e0b", "#10b981"];
-    const alpha = colors.alpha.length
-      ? colors.alpha
-      : series.map((c) => toAlpha(c, 0.18));
+    const datasets = topWorkflows.map((w, i) => {
+      const color = chartColors[i % chartColors.length];
+      const transparentColor = theme.toAlpha(color, 0.05);
 
-    const datasets = topWorkflows.map((w, i) => ({
-      label: w,
-      data: sortedDates.map((d) => daily[w]?.[d] || 0),
-      borderColor: series[i % series.length],
-      backgroundColor: alpha[i % alpha.length],
-      fill: true,
-      tension: 0.4,
-    }));
+      return {
+        label: w,
+        data: sortedDates.map((d) => daily[w]?.[d] || 0),
+        borderColor: color,
+        backgroundColor: transparentColor,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        borderWidth: 2,
+      };
+    });
 
     return { labels: sortedDates, datasets };
-  }, [data, colors.series, colors.alpha]);
+  }, [data, theme, chartColors]);
 
-  const options: ChartOptions<"line"> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "bottom",
-        labels: {
-          color: colors.text,
-          font: { size: 12 },
-          padding: 15,
-          // قص أسماء الـworkflows في الـlegend
-          generateLabels: (chart) => {
-            const dsets = chart.data.datasets || [];
-            return dsets.map((ds: any, i: number) => ({
-              text: truncate20(String(ds.label ?? "")),
-              fillStyle: ds.borderColor as string,
-              strokeStyle: ds.borderColor as string,
-              lineWidth: 2,
-              hidden: false,
-              datasetIndex: i,
-            }));
+  const options: ChartOptions<"line"> = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            color: theme.text,
+            font: { size: 12 },
+            padding: 15,
+            generateLabels: (chart) => {
+              const dsets = chart.data.datasets || [];
+              return dsets.map((ds: any, i: number) => ({
+                text: truncate20(String(ds.label ?? "")),
+                fillStyle: ds.borderColor as string,
+                strokeStyle: ds.borderColor as string,
+                lineWidth: 2,
+                hidden: false,
+                datasetIndex: i,
+                fontColor: theme.text,
+              }));
+            },
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const v = Number(ctx.parsed?.y || 0);
+              const name = truncate20(String(ctx.dataset?.label ?? ""));
+              return `${name}: ${v.toLocaleString()} tokens`;
+            },
           },
         },
       },
-      tooltip: {
-        callbacks: {
-          label: (ctx) => {
-            const v = Number(ctx.parsed?.y || 0);
-            const name = truncate20(String(ctx.dataset?.label ?? ""));
-            return `${name}: ${v.toLocaleString()} tokens`;
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: theme.grid,
+          },
+          ticks: {
+            color: theme.text,
+            callback: (v) => Number(v).toLocaleString(),
+          },
+        },
+        x: {
+          grid: {
+            color: theme.grid,
+          },
+          ticks: {
+            color: theme.text,
+            autoSkip: true,
+            maxRotation: 0,
           },
         },
       },
-    },
-    // عكس لون الشبكة مع لون الخط
-    scales: {
-      y: {
-        beginAtZero: true,
-        stacked: true,
-        grid: { color: colors.axis },
-        ticks: {
-          color: colors.grid,
-          callback: (v) => Number(v).toLocaleString(),
-          font: { size: 11 },
-        },
-      },
-      x: {
-        stacked: true,
-        grid: { color: colors.axis },
-        ticks: {
-          color: colors.grid,
-          font: { size: 10 },
-          maxRotation: 45,
-          autoSkip: true,
-        },
-      },
-    },
-  };
+    }),
+    [theme]
+  );
 
   return (
     <Card className="flex flex-col">

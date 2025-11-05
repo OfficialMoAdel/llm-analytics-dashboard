@@ -14,25 +14,64 @@ interface DetailedDataTableProps {
 
 // دالة لمعالجة تنسيقات التاريخ المختلفة
 function parseMultiFormatDate(timestamp: string): Date {
+  if (!timestamp || typeof timestamp !== 'string') {
+    return new Date();
+  }
+
   // محاولة التنسيق ISO أولاً (2025-07-04 18:45:14)
   let date = new Date(timestamp)
-  if (!isNaN(date.getTime())) {
+  if (!isNaN(date.getTime()) && date.getFullYear() > 1900 && date.getFullYear() < 2100) {
     return date
   }
 
-  // محاولة تنسيق DD/MM/YYYY HH:mm:ss أو DD/MM/YYYY HH:mm:ss AM/PM
-  const dmyPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})(?:\s+(AM|PM))?$/i
-  let match = timestamp.match(dmyPattern)
+  // محاولة تنسيق DD/MM/YYYY HH:mm:ss AM/PM (17/10/2025 5:46:44 PM)
+  const ddmmyyyyAmpmPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})\s+(AM|PM)$/i
+  let match = timestamp.match(ddmmyyyyAmpmPattern)
   
   if (match) {
     const [, day, month, year, hours, minutes, seconds, ampm] = match
     let hour = parseInt(hours)
     
-    // تحويل من 12 ساعة إلى 24 ساعة إذا وجدت AM/PM
-    if (ampm) {
-      if (ampm.toUpperCase() === 'PM' && hour !== 12) hour += 12
-      if (ampm.toUpperCase() === 'AM' && hour === 12) hour = 0
-    }
+    // تحويل من 12 ساعة إلى 24 ساعة
+    if (ampm.toUpperCase() === 'PM' && hour !== 12) hour += 12
+    if (ampm.toUpperCase() === 'AM' && hour === 12) hour = 0
+    
+    return new Date(
+      parseInt(year),
+      parseInt(month) - 1,  // الشهر يبدأ من 0
+      parseInt(day),
+      hour,
+      parseInt(minutes),
+      parseInt(seconds)
+    )
+  }
+
+  // محاولة تنسيق DD/MM/YYYY HH:mm:ss (بدون AM/PM)
+  const ddmmyyyyPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})$/
+  match = timestamp.match(ddmmyyyyPattern)
+  
+  if (match) {
+    const [, day, month, year, hours, minutes, seconds] = match
+    return new Date(
+      parseInt(year),
+      parseInt(month) - 1,  // الشهر يبدأ من 0
+      parseInt(day),
+      parseInt(hours),
+      parseInt(minutes),
+      parseInt(seconds)
+    )
+  }
+
+  // محاولة تنسيق MM/DD/YYYY HH:mm:ss AM/PM
+  const mmddyyyyAmpmPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})\s+(AM|PM)$/i
+  match = timestamp.match(mmddyyyyAmpmPattern)
+  
+  if (match) {
+    const [, month, day, year, hours, minutes, seconds, ampm] = match
+    let hour = parseInt(hours)
+    
+    if (ampm.toUpperCase() === 'PM' && hour !== 12) hour += 12
+    if (ampm.toUpperCase() === 'AM' && hour === 12) hour = 0
     
     return new Date(
       parseInt(year),
@@ -44,9 +83,9 @@ function parseMultiFormatDate(timestamp: string): Date {
     )
   }
 
-  // محاولة تنسيق MM/DD/YYYY HH:mm:ss
-  const mdyPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})$/
-  match = timestamp.match(mdyPattern)
+  // محاولة تنسيق MM/DD/YYYY HH:mm:ss (بدون AM/PM)
+  const mmddyyyyPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})$/
+  match = timestamp.match(mmddyyyyPattern)
   
   if (match) {
     const [, month, day, year, hours, minutes, seconds] = match
@@ -64,6 +103,7 @@ function parseMultiFormatDate(timestamp: string): Date {
   console.warn(`Unable to parse date: ${timestamp}`)
   return new Date()
 }
+
 
 export default function DetailedDataTable({ data }: DetailedDataTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
@@ -214,7 +254,16 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
                     </TableCell>
                     <TableCell className="text-right">${row.total_cost.toFixed(5)}</TableCell>
                     <TableCell>{row.workflow_name}</TableCell>
-                    <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none">{row.user_id}</TableCell>
+                <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none">
+  {row.user_id && row.user_id.trim() ? (
+    <span title={row.user_id}>{row.user_id}</span>
+  ) : (
+    <span className="text-muted-foreground italic text-xs">(no data)</span>
+  )}
+</TableCell>
+
+
+
                     <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none">{row.time}</TableCell>
                   </TableRow>
                 )

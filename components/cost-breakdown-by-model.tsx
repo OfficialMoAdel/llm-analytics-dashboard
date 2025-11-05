@@ -15,9 +15,11 @@ import {
   type ChartOptions,
 } from "chart.js";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useChartColors, truncate20 } from "@/hooks/use-chart-colors";
+import { createChartTheme, getChartColors } from "@/lib/chart-utils";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
+const truncate15 = (s: string) => (s?.length > 15 ? s.slice(0, 15) + "..." : s);
 
 interface CostBreakdownByModelProps {
   data: AnalyticsRow[];
@@ -25,7 +27,8 @@ interface CostBreakdownByModelProps {
 
 export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps) {
   const isMobile = useIsMobile();
-  const colors = useChartColors();
+  const theme = createChartTheme();
+  const chartColors = getChartColors();
 
   const chartData = useMemo(() => {
     const modelCosts = data.reduce((acc, row) => {
@@ -37,19 +40,24 @@ export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps
     const labels = sorted.map(([model]) => model);
     const vals = sorted.map(([, cost]) => cost);
 
+    // Apply color palette to each bar
+    const palette = labels.map(
+      (_, i) => chartColors[i % chartColors.length] || theme.toAlpha(chartColors[0], 0.8)
+    );
+
     return {
       labels,
       datasets: [
         {
           label: "Cost ($)",
           data: vals,
-          backgroundColor: colors.series[0] || "#3b82f6",
-          borderColor: colors.border,
+          backgroundColor: palette,
+          borderColor: theme.primary,
           borderWidth: 1,
         },
       ],
     };
-  }, [data, colors]);
+  }, [data, theme, chartColors]);
 
   const options: ChartOptions<"bar"> = {
     indexAxis: "y",
@@ -64,23 +72,27 @@ export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps
       },
     },
     scales: {
-  x: {
-    beginAtZero: true,
-    grid: { color: colors.axis },     // كان colors.grid
-    ticks: {
-      color: colors.grid,             // كان colors.axis
-      font: { size: isMobile ? 9 : 11 },
+      x: {
+        beginAtZero: true,
+        grid: {
+          color: theme.grid,
+        },
+        ticks: {
+          color: theme.text,
+          font: { size: isMobile ? 9 : 11 },
           callback: (value) => `$${Number(value).toFixed(3)}`,
         },
       },
       y: {
-    grid: { color: colors.axis },     // كان colors.grid
-    ticks: {
-      color: colors.grid,             // كان colors.axis
-      font: { size: isMobile ? 9 : 11 },
+        grid: {
+          color: theme.grid,
+        },
+        ticks: {
+          color: theme.text,
+          font: { size: isMobile ? 9 : 11 },
           callback: function (this: any, value: any) {
             const label = this.getLabelForValue(Number(value));
-            return truncate20(label);
+            return truncate15(label);
           },
         },
       },

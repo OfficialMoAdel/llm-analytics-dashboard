@@ -25,29 +25,24 @@ export async function fetchGoogleSheetData(): Promise<AnalyticsRow[]> {
     const response = await fetch(url)
     const text = await response.text()
 
-    // Remove the callback wrapper
     const jsonString = text.substring(47, text.length - 2)
     const json = JSON.parse(jsonString)
 
     const rows: AnalyticsRow[] = []
 
-    // Parse the Google Sheets response
     if (json.table && json.table.rows) {
-      // ← تخطي السطر الأول (index 0) لأنه عناوين الأعمدة
       for (let i = 1; i < json.table.rows.length; i++) {
         const row = json.table.rows[i]
         if (!row.c) continue
 
-        // دالة مساعدة لاستخراج القيمة من الخلية
         const getCellValue = (cell: any, asString = false): any => {
           if (!cell) return asString ? "" : null
           
-          // أولوية للقيمة المنسقة (.f) للنصوص والأرقام الكبيرة
           if (cell.f !== undefined && cell.f !== null) {
-            return asString ? String(cell.f) : cell.f
+            const formatted = String(cell.f).trim()
+            return asString ? formatted : cell.f
           }
           
-          // ثم القيمة الخام (.v)
           if (cell.v !== undefined && cell.v !== null) {
             return asString ? String(cell.v) : cell.v
           }
@@ -55,9 +50,28 @@ export async function fetchGoogleSheetData(): Promise<AnalyticsRow[]> {
           return asString ? "" : null
         }
 
+        // استخراج timestamp بشكل صحيح
+        let timestamp = getCellValue(row.c[1], true) || ""
+        
+        // إذا كان فارغاً، جرّب cell.f
+        if (!timestamp && row.c[1]) {
+          timestamp = row.c[1].f ? String(row.c[1].f).trim() : 
+                      row.c[1].v ? String(row.c[1].v).trim() : ""
+        }
+
+        // استخراج user_id بشكل صحيح
+        let user_id_str = ""
+        if (row.c[12]) {
+          if (row.c[12].f) {
+            user_id_str = String(row.c[12].f).trim()
+          } else if (row.c[12].v !== undefined && row.c[12].v !== null) {
+            user_id_str = String(row.c[12].v).trim()
+          }
+        }
+
         const rowData: AnalyticsRow = {
           execution_id: getCellValue(row.c[0], true),
-          timestamp: getCellValue(row.c[1], true),
+          timestamp: timestamp,  // ← تأكد من أنه string كامل
           workflow_id: getCellValue(row.c[2], true),
           workflow_name: getCellValue(row.c[3], true),
           llm_model: getCellValue(row.c[4], true),
@@ -68,9 +82,17 @@ export async function fetchGoogleSheetData(): Promise<AnalyticsRow[]> {
           input_cost: Number(getCellValue(row.c[9])) || 0,
           output_cost: Number(getCellValue(row.c[10])) || 0,
           total_cost: Number(getCellValue(row.c[11])) || 0,
-          user_id: getCellValue(row.c[12], true),
+          user_id: user_id_str,  // ← string فقط، لا تحويل لرقم
           time: getCellValue(row.c[13], true),
           tool: getCellValue(row.c[14], true) || undefined,
+        }
+
+        // Debug log لمعرفة إذا كانت البيانات فارغة
+        if (!user_id_str) {
+          console.warn(`Row ${i}: No user_id for ${rowData.workflow_name}`, {
+            timestamp: rowData.timestamp,
+            workflow: rowData.workflow_name
+          })
         }
 
         rows.push(rowData)
@@ -83,3 +105,5 @@ export async function fetchGoogleSheetData(): Promise<AnalyticsRow[]> {
     return []
   }
 }
+
+
