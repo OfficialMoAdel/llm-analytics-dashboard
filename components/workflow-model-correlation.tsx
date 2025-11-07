@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AnalyticsRow } from "@/lib/fetch-data";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -11,10 +11,10 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getChartColors } from "@/lib/chart-utils";
+import { RechartsLegend } from "@/components/charts";
 
 const truncate20 = (s: string) => (s?.length > 20 ? s.slice(0, 20) + "..." : s);
 
@@ -25,6 +25,7 @@ interface Props {
 export default function WorkflowModelCorrelation({ data }: Props) {
   const isMobile = useIsMobile();
   const chartColors = getChartColors();
+  const [hiddenItems, setHiddenItems] = useState<Set<string>>(new Set());
 
   const { chartData, models } = useMemo(() => {
     const workflowTotals = data.reduce((acc, row) => {
@@ -69,18 +70,44 @@ export default function WorkflowModelCorrelation({ data }: Props) {
       chartData: dataPoints,
       models: allModels.map((model, idx) => ({
         name: model,
+        displayName: truncate20(model),
         color: modelColors[idx],
       })),
     };
   }, [data, chartColors]);
 
+  const handleLegendClick = (dataKey: string) => {
+    setHiddenItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(dataKey)) {
+        newSet.delete(dataKey);
+      } else {
+        newSet.add(dataKey);
+      }
+      return newSet;
+    });
+  };
+
+  const visibleModels = useMemo(() => {
+    return models.filter(model => !hiddenItems.has(model.name));
+  }, [models, hiddenItems]);
+
+  const legendPayload = useMemo(() => {
+    return models.map(model => ({
+      value: model.displayName,
+      color: model.color,
+      id: model.name,
+    }));
+  }, [models]);
+
   return (
     <Card className="flex flex-col">
       <CardHeader>
-        <CardTitle>Workflow–Model Correlation</CardTitle>
+        <CardTitle>Workflow Model Correlation</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1">
-        <div className="h-full min-h-[300px] w-full">
+      <CardContent className="flex-1 flex flex-col">
+        {/* ✅ الرسم البياني في الأعلى */}
+        <div className="flex-1 min-h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -90,6 +117,9 @@ export default function WorkflowModelCorrelation({ data }: Props) {
                 tick={{ fontSize: isMobile ? 10 : 11 }}
                 tickLine={false}
                 axisLine={false}
+                angle={-45}              // ✅ أضف هنا
+                textAnchor="end"         // ✅ أضف هنا
+                height={80} 
               />
               <YAxis
                 className="text-xs fill-muted-foreground"
@@ -99,6 +129,7 @@ export default function WorkflowModelCorrelation({ data }: Props) {
                 tickFormatter={(value) => Number(value).toLocaleString()}
               />
               <Tooltip
+                cursor={{ fill: 'transparent' }}
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
                     return (
@@ -124,24 +155,30 @@ export default function WorkflowModelCorrelation({ data }: Props) {
                   return null;
                 }}
               />
-              {!isMobile && (
-                <Legend
-                  wrapperStyle={{ fontSize: "12px", paddingTop: "15px" }}
-                />
-              )}
-              {models.map((model) => (
+              {visibleModels.map((model) => (
                 <Bar
                   key={model.name}
                   dataKey={model.name}
                   fill={model.color}
-                  // fillOpacity={0.5}
-                 stroke={model.color}
+                  stroke={model.color}
                   strokeWidth={1.5}
                 />
               ))}
             </BarChart>
           </ResponsiveContainer>
         </div>
+
+        {/* ✅ الأسماء في الأسفل بدلاً من اليمين */}
+        {!isMobile && (
+          <div className="w-full pt-4 flex justify-center">
+            <RechartsLegend
+              position="bottom"
+              onItemClick={handleLegendClick}
+              hiddenItems={hiddenItems}
+              payload={legendPayload}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

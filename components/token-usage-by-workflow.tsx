@@ -76,6 +76,7 @@ export default function TokenUsageByWorkflow({ data }: TokenUsageByWorkflowProps
                 width={isMobile ? 60 : 80}
               />
               <Tooltip
+              cursor={{ fill: 'transparent' }}
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;

@@ -20,12 +20,10 @@ interface TokenUsageOverTimeProps {
 
 export default function TokenUsageOverTime({ data }: TokenUsageOverTimeProps) {
   const chartData = useMemo(() => {
-    // Filter out invalid dates before processing
     const validData = filterValidDates(data, 'timestamp');
 
     const dailyTokens = validData.reduce((acc, row) => {
       const date = new Date(row.timestamp);
-      // Double-check the date is valid after filtering
       if (isNaN(date.getTime()) || date.toString() === 'Invalid Date') {
         return acc;
       }
@@ -55,12 +53,16 @@ export default function TokenUsageOverTime({ data }: TokenUsageOverTimeProps) {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              {/* ✅ التغيير هنا */}
               <XAxis
                 dataKey="date"
                 className="text-xs fill-muted-foreground"
                 tick={{ fontSize: 12 }}
                 tickLine={false}
                 axisLine={false}
+                angle={-45}          // ✅ إمالة التواريخ
+                textAnchor="end"      // ✅ محاذاة النص
+                height={80}           // ✅ مساحة للتواريخ المائلة
               />
               <YAxis
                 className="text-xs fill-muted-foreground"
@@ -70,6 +72,12 @@ export default function TokenUsageOverTime({ data }: TokenUsageOverTimeProps) {
                 tickFormatter={(value) => value.toLocaleString()}
               />
               <Tooltip
+                cursor={{ fill: 'transparent' }}
+                contentStyle={{
+                  background: "transparent",
+                  border: "none",
+                  boxShadow: "none",
+                }}
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
                     return (
@@ -97,8 +105,7 @@ export default function TokenUsageOverTime({ data }: TokenUsageOverTimeProps) {
                 strokeWidth={2}
                 dot={{ r: 3 }}
                 activeDot={{ r: 5 }}
-                fill="hsl(151.3274 66.8639% 66.8627%)"
-                fillOpacity={0.25}
+                fill="transparent"
               />
             </LineChart>
           </ResponsiveContainer>

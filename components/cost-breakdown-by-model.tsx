@@ -74,9 +74,11 @@ export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps
                 width={isMobile ? 60 : 80}
               />
               <Tooltip
+              cursor={{ fill: 'transparent' }}
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
+                    const displayValue = Number(data.value || 0);
                     return (
                       <div className="rounded-lg border bg-background p-2 shadow-md">
                         <div className="grid gap-2">
@@ -86,7 +88,7 @@ export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps
                             </span>
                             <span className="font-bold">{data.fullName}</span>
                             <span className="text-muted-foreground">
-                              Cost: ${Number(data.value).toFixed(5)}
+                              Cost: ${isNaN(displayValue) ? "0.00000" : displayValue.toFixed(5)}
                             </span>
                           </div>
                         </div>

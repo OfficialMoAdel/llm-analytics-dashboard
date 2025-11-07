@@ -7,3 +7,4 @@
 export { default as ChartContainer } from './ChartContainer';
 export { default as ChartTooltip, useChartTooltip } from './ChartTooltip';
 export { default as ChartLegend, useChartLegend } from './ChartLegend';
+export { default as RechartsLegend } from './RechartsLegend';
