@@ -3,39 +3,22 @@
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AnalyticsRow } from "@/lib/fetch-data";
-import { Line } from "react-chartjs-2";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
-  Legend,
-  Filler,
-  type ChartOptions,
-} from "chart.js";
-import { getChartTheme, filterValidDates } from "@/lib/chart-theme";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+  ResponsiveContainer,
+} from "recharts";
+import { filterValidDates } from "@/lib/chart-theme";
 
 interface TokenUsageOverTimeProps {
   data: AnalyticsRow[];
 }
 
 export default function TokenUsageOverTime({ data }: TokenUsageOverTimeProps) {
-  const theme = getChartTheme();
-
   const chartData = useMemo(() => {
     // Filter out invalid dates before processing
     const validData = filterValidDates(data, 'timestamp');
@@ -56,61 +39,11 @@ export default function TokenUsageOverTime({ data }: TokenUsageOverTimeProps) {
       (a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime()
     );
 
-    return {
-      labels: sorted.map(([date]) => date),
-      datasets: [
-        {
-          label: "Token Usage",
-          data: sorted.map(([, tokens]) => tokens),
-          borderColor: theme.primaryStroke,
-          backgroundColor: theme.primaryFill,
-          fill: true,
-          tension: 0.4,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          borderWidth: 2,
-        },
-      ],
-    };
-  }, [data, theme.primaryFill, theme.primaryStroke]);
-
-  const options: ChartOptions<"line"> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        callbacks: {
-          label: (context) =>
-            `Tokens: ${Number(context.parsed?.y ?? 0).toLocaleString()}`,
-        },
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        grid: {
-          color: theme.grid,
-        },
-        ticks: {
-          color: theme.text,
-          callback: (value) => Number(value).toLocaleString(),
-        },
-      },
-      x: {
-        grid: {
-          color: theme.grid,
-        },
-        ticks: {
-          color: theme.text,
-          autoSkip: true,
-          maxRotation: 0,
-        },
-      },
-    },
-  };
+    return sorted.map(([date, tokens]) => ({
+      date,
+      tokens,
+    }));
+  }, [data]);
 
   return (
     <Card className="flex flex-col">
@@ -119,7 +52,56 @@ export default function TokenUsageOverTime({ data }: TokenUsageOverTimeProps) {
       </CardHeader>
       <CardContent className="flex-1">
         <div className="h-full min-h-[300px] w-full">
-          <Line data={chartData} options={options} />
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis
+                dataKey="date"
+                className="text-xs fill-muted-foreground"
+                tick={{ fontSize: 12 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                className="text-xs fill-muted-foreground"
+                tick={{ fontSize: 12 }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => value.toLocaleString()}
+              />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="rounded-lg border bg-background p-2 shadow-md">
+                        <div className="grid gap-2">
+                          <div className="flex flex-col">
+                            <span className="text-[0.70rem] uppercase text-muted-foreground">
+                              {label}
+                            </span>
+                            <span className="font-bold text-muted-foreground">
+                              Tokens: {Number(payload[0]?.value ?? 0).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="tokens"
+                stroke="hsl(151.3274 66.8639% 66.8627%)"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                activeDot={{ r: 5 }}
+                fill="hsl(151.3274 66.8639% 66.8627%)"
+                fillOpacity={0.25}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </CardContent>
     </Card>

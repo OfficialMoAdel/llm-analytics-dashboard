@@ -110,58 +110,7 @@ export function createChartTheme() {
 }
 
 /**
- * Default Chart.js options with theme support
- */
-export const defaultChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      display: true,
-      position: 'top' as const,
-      labels: {
-        font: {
-          size: 12,
-        },
-        usePointStyle: true,
-        padding: 15,
-      },
-    },
-    tooltip: {
-      mode: 'index' as const,
-      intersect: false,
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      titleColor: '#ffffff',
-      bodyColor: '#ffffff',
-      borderColor: 'rgba(255, 255, 255, 0.1)',
-      borderWidth: 1,
-    },
-  },
-  scales: {
-    x: {
-      grid: {
-        color: 'rgba(0, 0, 0, 0.1)',
-        drawBorder: false,
-      },
-      ticks: {
-        color: 'rgba(0, 0, 0, 0.6)',
-      },
-    },
-    y: {
-      beginAtZero: true,
-      grid: {
-        color: 'rgba(0, 0, 0, 0.1)',
-        drawBorder: false,
-      },
-      ticks: {
-        color: 'rgba(0, 0, 0, 0.6)',
-      },
-    },
-  },
-};
-
-/**
- * Hook for chart theme variables (alternative to useTheme)
+ * Hook for chart theme variables
  */
 export function useChartTheme() {
   return createChartTheme();
@@ -172,6 +121,5 @@ export default {
   toAlpha,
   getChartColors,
   createChartTheme,
-  defaultChartOptions,
   useChartTheme,
 };

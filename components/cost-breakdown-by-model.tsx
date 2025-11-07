@@ -3,21 +3,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AnalyticsRow } from "@/lib/fetch-data";
 import React, { useMemo } from "react";
-import { Bar } from "react-chartjs-2";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
-  Legend,
-  type ChartOptions,
-} from "chart.js";
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { createChartTheme, getChartColors } from "@/lib/chart-utils";
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+import { getChartColors } from "@/lib/chart-utils";
 
 const truncate15 = (s: string) => (s?.length > 15 ? s.slice(0, 15) + "..." : s);
 
@@ -27,7 +24,6 @@ interface CostBreakdownByModelProps {
 
 export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps) {
   const isMobile = useIsMobile();
-  const theme = createChartTheme();
   const chartColors = getChartColors();
 
   const chartData = useMemo(() => {
@@ -37,67 +33,14 @@ export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps
     }, {} as Record<string, number>);
 
     const sorted = Object.entries(modelCosts).sort((a, b) => b[1] - a[1]);
-    const labels = sorted.map(([model]) => model);
-    const vals = sorted.map(([, cost]) => cost);
 
-    // Apply color palette to each bar
-    const palette = labels.map(
-      (_, i) => chartColors[i % chartColors.length] || theme.toAlpha(chartColors[0], 0.8)
-    );
-
-    return {
-      labels,
-      datasets: [
-        {
-          label: "Cost ($)",
-          data: vals,
-          backgroundColor: palette,
-          borderColor: theme.primary,
-          borderWidth: 1,
-        },
-      ],
-    };
-  }, [data, theme, chartColors]);
-
-  const options: ChartOptions<"bar"> = {
-    indexAxis: "y",
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx) => `Cost: $${Number(ctx.parsed.x || 0).toFixed(5)}`,
-        },
-      },
-    },
-    scales: {
-      x: {
-        beginAtZero: true,
-        grid: {
-          color: theme.grid,
-        },
-        ticks: {
-          color: theme.text,
-          font: { size: isMobile ? 9 : 11 },
-          callback: (value) => `$${Number(value).toFixed(3)}`,
-        },
-      },
-      y: {
-        grid: {
-          color: theme.grid,
-        },
-        ticks: {
-          color: theme.text,
-          font: { size: isMobile ? 9 : 11 },
-          callback: function (this: any, value: any) {
-            const label = this.getLabelForValue(Number(value));
-            return truncate15(label);
-          },
-        },
-      },
-    },
-  };
+    return sorted.map(([model, cost], index) => ({
+      model: truncate15(model),
+      fullName: model,
+      cost,
+      fill: chartColors[index % chartColors.length],
+    }));
+  }, [data, chartColors]);
 
   return (
     <Card className="flex flex-col">
@@ -106,7 +49,60 @@ export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps
       </CardHeader>
       <CardContent className="flex-1">
         <div className="h-full min-h-[300px] w-full">
-          <Bar data={chartData} options={options} />
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              layout="vertical"
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis
+                type="number"
+                className="text-xs fill-muted-foreground"
+                tick={{ fontSize: isMobile ? 9 : 11 }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `$${Number(value).toFixed(3)}`}
+              />
+              <YAxis
+                type="category"
+                dataKey="model"
+                className="text-xs fill-muted-foreground"
+                tick={{ fontSize: isMobile ? 9 : 11 }}
+                tickLine={false}
+                axisLine={false}
+                width={isMobile ? 60 : 80}
+              />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                    return (
+                      <div className="rounded-lg border bg-background p-2 shadow-md">
+                        <div className="grid gap-2">
+                          <div className="flex flex-col">
+                            <span className="text-[0.70rem] uppercase text-muted-foreground">
+                              Model
+                            </span>
+                            <span className="font-bold">{data.fullName}</span>
+                            <span className="text-muted-foreground">
+                              Cost: ${Number(data.value).toFixed(5)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Bar dataKey="cost" radius={[0, 4, 4, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </CardContent>
     </Card>

@@ -3,8 +3,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AnalyticsRow } from "@/lib/fetch-data";
 import { useMemo } from "react";
-import { Bar } from "react-chartjs-2";
-import type { ChartOptions } from "chart.js";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 import { createChartTheme, getChartColors } from "@/lib/chart-utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -30,69 +38,13 @@ export default function ToolUsageDistribution({ data }: ToolUsageDistributionPro
     );
 
     const sorted = Object.entries(toolTokens).sort((a, b) => b[1] - a[1]);
-    const labels = sorted.map(([tool]) => tool);
-    const values = sorted.map(([, tokens]) => tokens);
 
-    const palette = labels.map(
-      (_, i) => chartColors[i % chartColors.length] || theme.toAlpha(chartColors[0], 0.8)
-    );
-
-    return {
-      labels,
-      datasets: [
-        {
-          label: "Tokens",
-          data: values,
-          backgroundColor: palette,
-          borderColor: theme.primary,
-          borderWidth: 1,
-        },
-      ],
-    };
-  }, [data, theme, chartColors]);
-
-  const options: ChartOptions<"bar"> = {
-    indexAxis: "y",
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        backgroundColor: theme.grid,
-        titleColor: theme.text,
-        bodyColor: theme.text,
-        callbacks: {
-          label: (context) => {
-            return `Tokens: ${(context.parsed.x ?? 0).toLocaleString()}`;
-          },
-        },
-      },
-    },
-    scales: {
-      x: {
-        beginAtZero: true,
-        grid: {
-          color: theme.grid,
-        },
-        ticks: {
-          color: theme.text,
-          font: { size: isMobile ? 9 : 11 },
-          callback: (value) => Number(value).toLocaleString(),
-        },
-      },
-      y: {
-        grid: {
-          color: theme.grid,
-        },
-        ticks: {
-          color: theme.text,
-          font: { size: isMobile ? 9 : 11 },
-        },
-      },
-    },
-  };
+    return sorted.map(([tool, tokens], index) => ({
+      tool,
+      tokens,
+      fill: chartColors[index % chartColors.length],
+    }));
+  }, [data, chartColors]);
 
   return (
     <Card className="flex flex-col">
@@ -101,7 +53,60 @@ export default function ToolUsageDistribution({ data }: ToolUsageDistributionPro
       </CardHeader>
       <CardContent className="flex-1">
         <div className="h-full min-h-[300px] w-full">
-          <Bar data={chartData} options={options} />
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              layout="vertical"
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis
+                type="number"
+                className="text-xs fill-muted-foreground"
+                tick={{ fontSize: isMobile ? 9 : 11 }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => Number(value).toLocaleString()}
+              />
+              <YAxis
+                type="category"
+                dataKey="tool"
+                className="text-xs fill-muted-foreground"
+                tick={{ fontSize: isMobile ? 9 : 11 }}
+                tickLine={false}
+                axisLine={false}
+                width={isMobile ? 60 : 80}
+              />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                    return (
+                      <div className="rounded-lg border bg-background p-2 shadow-md">
+                        <div className="grid gap-2">
+                          <div className="flex flex-col">
+                            <span className="text-[0.70rem] uppercase text-muted-foreground">
+                              Tool
+                            </span>
+                            <span className="font-bold">{data.tool}</span>
+                            <span className="text-muted-foreground">
+                              Tokens: {Number(data.tokens).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Bar dataKey="tokens" radius={[0, 4, 4, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </CardContent>
     </Card>

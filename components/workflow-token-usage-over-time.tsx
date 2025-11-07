@@ -3,32 +3,18 @@
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AnalyticsRow } from "@/lib/fetch-data";
-import { Line } from "react-chartjs-2";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
+  ResponsiveContainer,
   Legend,
-  Filler,
-  type ChartOptions,
-} from "chart.js";
-import { createChartTheme, getChartColors } from "@/lib/chart-utils";
+} from "recharts";
+import { getChartColors } from "@/lib/chart-utils";
 import { filterValidDates } from "@/lib/chart-theme";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
 
 const truncate20 = (s: string) => (s?.length > 20 ? s.slice(0, 20) + "..." : s);
 
@@ -39,7 +25,6 @@ interface WorkflowTokenUsageOverTimeProps {
 export default function WorkflowTokenUsageOverTime({
   data,
 }: WorkflowTokenUsageOverTimeProps) {
-  const theme = createChartTheme();
   const chartColors = getChartColors();
 
   const chartData = useMemo(() => {
@@ -79,86 +64,25 @@ export default function WorkflowTokenUsageOverTime({
       (a, b) => new Date(a).getTime() - new Date(b).getTime()
     );
 
-    const datasets = topWorkflows.map((w, i) => {
-      const color = chartColors[i % chartColors.length];
-      const transparentColor = theme.toAlpha(color, 0.05);
-
-      return {
-        label: w,
-        data: sortedDates.map((d) => daily[w]?.[d] || 0),
-        borderColor: color,
-        backgroundColor: transparentColor,
-        fill: true,
-        tension: 0.4,
-        pointRadius: 3,
-        pointHoverRadius: 5,
-        borderWidth: 2,
-      };
+    // Transform to Recharts format
+    const result = sortedDates.map((date) => {
+      const dataPoint: any = { date };
+      topWorkflows.forEach((w) => {
+        const workflowKey = w.length > 20 ? w.slice(0, 17) + "..." : w;
+        dataPoint[workflowKey] = daily[w]?.[date] || 0;
+      });
+      return dataPoint;
     });
 
-    return { labels: sortedDates, datasets };
-  }, [data, theme, chartColors]);
-
-  const options: ChartOptions<"line"> = useMemo(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "bottom",
-          labels: {
-            color: theme.text,
-            font: { size: 12 },
-            padding: 15,
-            generateLabels: (chart) => {
-              const dsets = chart.data.datasets || [];
-              return dsets.map((ds: any, i: number) => ({
-                text: truncate20(String(ds.label ?? "")),
-                fillStyle: ds.borderColor as string,
-                strokeStyle: ds.borderColor as string,
-                lineWidth: 2,
-                hidden: false,
-                datasetIndex: i,
-                fontColor: theme.text,
-              }));
-            },
-          },
-        },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => {
-              const v = Number(ctx.parsed?.y || 0);
-              const name = truncate20(String(ctx.dataset?.label ?? ""));
-              return `${name}: ${v.toLocaleString()} tokens`;
-            },
-          },
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          grid: {
-            color: theme.grid,
-          },
-          ticks: {
-            color: theme.text,
-            callback: (v) => Number(v).toLocaleString(),
-          },
-        },
-        x: {
-          grid: {
-            color: theme.grid,
-          },
-          ticks: {
-            color: theme.text,
-            autoSkip: true,
-            maxRotation: 0,
-          },
-        },
-      },
-    }),
-    [theme]
-  );
+    return {
+      data: result,
+      workflows: topWorkflows.map((w, i) => ({
+        name: w.length > 20 ? w.slice(0, 17) + "..." : w,
+        fullName: w,
+        color: chartColors[i % chartColors.length],
+      })),
+    };
+  }, [data, chartColors]);
 
   return (
     <Card className="flex flex-col">
@@ -170,7 +94,71 @@ export default function WorkflowTokenUsageOverTime({
       </CardHeader>
       <CardContent className="flex-1">
         <div className="h-full min-h-[300px] w-full">
-          <Line data={chartData} options={options} />
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData.data}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis
+                dataKey="date"
+                className="text-xs fill-muted-foreground"
+                tick={{ fontSize: 12 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                className="text-xs fill-muted-foreground"
+                tick={{ fontSize: 12 }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => Number(value).toLocaleString()}
+              />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="rounded-lg border bg-background p-2 shadow-md">
+                        <div className="grid gap-2">
+                          <span className="text-[0.70rem] uppercase text-muted-foreground">
+                            {label}
+                          </span>
+                          {payload.map((entry, index) => {
+                            const workflow = chartData.workflows[index];
+                            return (
+                              <div key={index} className="flex flex-col">
+                                <span className="font-bold" style={{ color: entry.color }}>
+                                  {workflow.fullName}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  Tokens: {Number(entry.value ?? 0).toLocaleString()}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Legend
+                wrapperStyle={{ fontSize: "12px", paddingTop: "15px" }}
+                iconType="line"
+              />
+              {chartData.workflows.map((workflow, index) => (
+                <Line
+                  key={workflow.fullName}
+                  type="monotone"
+                  dataKey={workflow.name}
+                  stroke={workflow.color}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                  fill={workflow.color}
+                  fillOpacity={0.1}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </CardContent>
     </Card>

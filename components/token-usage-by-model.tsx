@@ -3,18 +3,16 @@
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AnalyticsRow } from "@/lib/fetch-data";
-import { Doughnut } from "react-chartjs-2";
 import {
-  Chart as ChartJS,
-  ArcElement,
+  PieChart,
+  Pie,
+  Cell,
   Tooltip,
+  ResponsiveContainer,
   Legend,
-  type ChartOptions,
-} from "chart.js";
+} from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { createChartTheme, getChartColors } from "@/lib/chart-utils";
-
-ChartJS.register(ArcElement, Tooltip, Legend);
+import { getChartColors } from "@/lib/chart-utils";
 
 const MAX_LABEL = 15;
 const truncate15 = (s: string) => (s?.length > MAX_LABEL ? s.slice(0, MAX_LABEL) + "..." : s);
@@ -27,7 +25,6 @@ export default React.memo(function TokenUsageByModel({
   data,
 }: TokenUsageByModelProps) {
   const isMobile = useIsMobile();
-  const theme = createChartTheme();
   const chartColors = getChartColors();
 
   const chartData = useMemo(() => {
@@ -38,78 +35,16 @@ export default React.memo(function TokenUsageByModel({
     }, {} as Record<string, number>);
 
     const sorted = Object.entries(modelTokens).sort((a, b) => b[1] - a[1]);
-    const labels = sorted.map(([model]) => model);
-    const values = sorted.map(([, v]) => v);
+    const total = sorted.reduce((sum, [, value]) => sum + value, 0);
 
-    const palette = labels.map(
-      (_, i) => chartColors[i % chartColors.length] || theme.toAlpha(chartColors[0], 0.8)
-    );
-
-    return {
-      labels,
-      datasets: [
-        {
-          data: values,
-          backgroundColor: palette,
-          borderColor: theme.background,
-          borderWidth: 2,
-        },
-      ],
-    };
-  }, [data, theme, chartColors]);
-
-  const options: ChartOptions<"doughnut"> = useMemo(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: !isMobile,
-          position: isMobile ? "bottom" : "right",
-          labels: {
-            color: theme.text,
-            padding: isMobile ? 8 : 15,
-            font: { size: isMobile ? 10 : 12 },
-            boxWidth: isMobile ? 10 : 12,
-            usePointStyle: true,
-            generateLabels: (chart) => {
-              const data = chart.data;
-              if (data.labels && data.labels.length && data.datasets.length) {
-                return (data.labels as (string | string[])[]).map((label, i) => {
-                  const text = truncate15(String(label));
-                  const fill = Array.isArray(data.datasets[0].backgroundColor)
-                    ? (data.datasets[0].backgroundColor as string[])[i]
-                    : (data.datasets[0].backgroundColor as string);
-                  return {
-                    text,
-                    fillStyle: fill,
-                    hidden: false,
-                    index: i,
-                    fontColor: theme.text,  // ← أضف هذا
-                  };
-                });
-              }
-              return [];
-            },
-          },
-        },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => {
-              const rawLabel = String(ctx.label ?? "");
-              const label = truncate15(rawLabel);
-              const value = Number(ctx.parsed ?? 0);
-              const total = (ctx.dataset.data as number[]).reduce((a, b) => a + b, 0);
-              const pct = total ? ((value / total) * 100).toFixed(1) : "0.0";
-              return `${label}: ${value.toLocaleString()} (${pct}%)`;
-            },
-          },
-        },
-      },
-      cutout: "60%",
-    }),
-    [isMobile, theme]
-  );
+    return sorted.map(([model, tokens], index) => ({
+      name: model,
+      displayName: truncate15(model),
+      value: tokens,
+      fill: chartColors[index % chartColors.length],
+      percentage: total ? ((tokens / total) * 100).toFixed(1) : "0.0",
+    }));
+  }, [data, chartColors]);
 
   return (
     <Card className="flex flex-col">
@@ -118,7 +53,47 @@ export default React.memo(function TokenUsageByModel({
       </CardHeader>
       <CardContent className="flex-1">
         <div className="h-full min-h-[300px] w-full">
-          <Doughnut data={chartData} options={options} />
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                innerRadius={isMobile ? 40 : 60}
+                outerRadius={isMobile ? 80 : 100}
+                paddingAngle={2}
+                dataKey="value"
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                    return (
+                      <div className="rounded-lg border bg-background p-2 shadow-md">
+                        <div className="grid gap-2">
+                          <span className="font-bold">{data.name}</span>
+                          <span className="text-muted-foreground">
+                            Tokens: {Number(data.value).toLocaleString()} ({data.percentage}%)
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              {!isMobile && (
+                <Legend
+                  wrapperStyle={{ fontSize: "12px", padding: "15px" }}
+                  iconType="circle"
+                />
+              )}
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </CardContent>
     </Card>
