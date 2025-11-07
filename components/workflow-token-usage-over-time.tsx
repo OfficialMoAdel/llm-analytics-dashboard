@@ -164,9 +164,9 @@ export default function WorkflowTokenUsageOverTime({
                 tick={{ fontSize: 12 }}
                 tickLine={false}
                 axisLine={false}
-  angle={-45}              // ✅ أضف هنا
-  textAnchor="end"         // ✅ أضف هنا
-  height={80} 
+                angle={-45}              // ✅ أضف هنا
+                textAnchor="end"         // ✅ أضف هنا
+                height={80} 
               />
               <YAxis
                 className="text-xs fill-muted-foreground"
