@@ -78,7 +78,7 @@ export default function CostBreakdownByModel({ data }: CostBreakdownByModelProps
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
-                    const displayValue = Number(data.value || 0);
+                    const displayValue = Number(data.cost || 0);
                     return (
                       <div className="rounded-lg border bg-background p-2 shadow-md">
                         <div className="grid gap-2">

@@ -27,9 +27,11 @@ export default function WorkflowTokenUsageOverTime({
 }: WorkflowTokenUsageOverTimeProps) {
   const isMobile = useIsMobile();
   const chartColors = getChartColors();
-  
+
   // ✅ إضافة state للعناصر المخفية
   const [hiddenItems, setHiddenItems] = useState<Set<string>>(new Set());
+  // ✅ إضافة state لعدد الـ workflows المراد عرضها
+  const [workflowCount, setWorkflowCount] = useState(3);
 
   const chartData = useMemo(() => {
     const validData = data.filter(row => {
@@ -50,7 +52,7 @@ export default function WorkflowTokenUsageOverTime({
 
     const topWorkflows = Object.entries(workflowTotals)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
+      .slice(0, workflowCount)
       .map(([w]) => w);
 
     if (topWorkflows.length === 0) {
@@ -98,7 +100,7 @@ export default function WorkflowTokenUsageOverTime({
         color: chartColors[i % chartColors.length],
       })),
     };
-  }, [data, chartColors]);
+  }, [data, chartColors, workflowCount]);
 
   // ✅ معالج الضغط على Legend
   const handleLegendClick = (dataKey: string) => {
@@ -112,6 +114,11 @@ export default function WorkflowTokenUsageOverTime({
       return newSet;
     });
   };
+
+  // ✅ إعادة تعيين العناصر المخفية عند تغيير عدد الـ workflows
+  React.useEffect(() => {
+    setHiddenItems(new Set());
+  }, [workflowCount]);
 
   // ✅ تصفية الـ workflows المرئية
   const visibleWorkflows = useMemo(() => {
@@ -134,7 +141,7 @@ export default function WorkflowTokenUsageOverTime({
         <CardHeader>
           <CardTitle>Workflow Token Usage Over Time</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Token Usage Trends for Top 3 Workflows
+            Token Usage Trends for Top {workflowCount} Workflows
           </p>
         </CardHeader>
         <CardContent className="flex-1 flex items-center justify-center">
@@ -147,10 +154,32 @@ export default function WorkflowTokenUsageOverTime({
   return (
     <Card className="flex flex-col" style={{ minHeight: "450px", height: "450px" }}>
       <CardHeader className="flex-shrink-0">
-        <CardTitle>Workflow Token Usage Over Time</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Token Usage Trends for Top 3 Workflows
-        </p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-1">
+            <CardTitle>Workflow Token Usage Over Time</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Token Usage Trends for Top {workflowCount} Workflows
+            </p>
+          </div>
+          {/* ✅ dropdown لاختيار عدد الـ workflows */}
+          <div className="flex items-center gap-2">
+            <label htmlFor="workflow-count" className="text-sm text-muted-foreground">
+              Show
+            </label>
+            <select
+              id="workflow-count"
+              value={workflowCount}
+              onChange={(e) => setWorkflowCount(Number(e.target.value))}
+              className="rounded-md border border-input bg-background px-3 py-1 text-sm min-h-[36px] w-16"
+            >
+              <option value={3}>3</option>
+              <option value={4}>4</option>
+              <option value={5}>5</option>
+              <option value={6}>6</option>
+            </select>
+            <span className="text-sm text-muted-foreground">workflows</span>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0">
         {/* ✅ الرسم البياني في الأعلى */}

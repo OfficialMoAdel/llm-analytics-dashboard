@@ -112,6 +112,27 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
 
+  // ✅ دالة لتنسيق User ID (إظهار آخر 12 رقم فقط للأرقام الكبيرة)
+  const formatUserId = (userId: string | null | undefined): string => {
+    if (!userId || typeof userId !== 'string') {
+      return "(no data)";
+    }
+
+    // تنظيف User ID
+    const cleanId = userId.trim();
+    if (!cleanId) {
+      return "(no data)";
+    }
+
+    // فقط إذا كان رقماً صافياً وطويلاً (أكثر من 12 رقم)
+    if (/^\d+$/.test(cleanId) && cleanId.length > 12) {
+      return cleanId.slice(-12);
+    }
+
+    // لجميع الـ IDs الأخرى (إيميلات، IDs قصيرة، مختلطة) - إظهار كما هو
+    return cleanId;
+  };
+
   const sortedAndFilteredData = useMemo(() => {
     // First, sort the data by time
     const sorted = [...data].sort((a, b) => {
@@ -253,11 +274,14 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
                     <TableCell className="text-right">${row.total_cost.toFixed(5)}</TableCell>
                     <TableCell>{row.workflow_name}</TableCell>
                     <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none">
-                      {row.user_id && row.user_id.trim() ? (
-                        <span title={row.user_id}>{row.user_id}</span>
-                      ) : (
-                        <span className="text-muted-foreground italic text-xs">(no data)</span>
-                      )}
+                      {(() => {
+                        const displayId = formatUserId(row.user_id);
+                        if (displayId === "(no data)") {
+                          return <span className="text-muted-foreground italic text-xs">(no data)</span>;
+                        }
+                        // إظهار آخر 12 رقم، مع العنوان الكامل عند التمرير
+                        return <span title={row.user_id || ""}>{displayId}</span>;
+                      })()}
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none">{row.time}</TableCell>
                   </TableRow>
