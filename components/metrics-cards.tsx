@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { AnalyticsRow } from "@/lib/fetch-data"
+import { ModelDisplay, getModelIcon } from "@/utils/model-icon-map"
 
 interface MetricsCardsProps {
   data: AnalyticsRow[]
@@ -62,10 +63,20 @@ export default function MetricsCards({ data }: MetricsCardsProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Most Used Model</CardTitle>
-            <span className="text-2xl sm:text-xl">🤖</span>
+            {mostUsedModel?.[0] && (
+              <img
+                src={getModelIcon(mostUsedModel[0])}
+                alt="Model"
+                className="h-6 w-6 sm:h-7 sm:w-7 object-contain"
+              />
+            )}
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-base font-bold break-words">{mostUsedModel?.[0] || "N/A"}</div>
+            {mostUsedModel?.[0] ? (
+              <ModelDisplay modelName={mostUsedModel[0]} className="text-lg sm:text-base font-bold" />
+            ) : (
+              <div className="text-lg sm:text-base font-bold">N/A</div>
+            )}
             <p className="text-xs text-muted-foreground">{mostUsedModelPercentage}% of total tokens</p>
           </CardContent>
         </Card>

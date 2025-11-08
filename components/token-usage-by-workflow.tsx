@@ -1,102 +1,113 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { AnalyticsRow } from "@/lib/fetch-data"
-import { useMemo } from "react"
-import { Bar } from "react-chartjs-2"
-import type { ChartOptions } from "chart.js"
-import { useIsMobile } from "@/hooks/use-mobile"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { AnalyticsRow } from "@/lib/fetch-data";
+import React, { useMemo } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { getChartColors } from "@/lib/chart-utils";
+
+const truncate12 = (s: string) => (s?.length > 12 ? s.slice(0, 12) + "..." : s);
 
 interface TokenUsageByWorkflowProps {
-  data: AnalyticsRow[]
+  data: AnalyticsRow[];
 }
 
 export default function TokenUsageByWorkflow({ data }: TokenUsageByWorkflowProps) {
-  const isMobile = useIsMobile()
+  const isMobile = useIsMobile();
+  const chartColors = getChartColors();
 
   const chartData = useMemo(() => {
-    const workflowTokens = data.reduce(
-      (acc, row) => {
-        const workflow = row.workflow_name || "Unknown"
-        const tokens = row.input_tokens + row.completion_tokens
-        acc[workflow] = (acc[workflow] || 0) + tokens
-        return acc
-      },
-      {} as Record<string, number>,
-    )
+    const workflowTokens = data.reduce((acc, row) => {
+      const workflow = row.workflow_name || "Unknown";
+      const tokens = row.input_tokens + row.completion_tokens;
+      acc[workflow] = (acc[workflow] || 0) + tokens;
+      return acc;
+    }, {} as Record<string, number>);
 
-    const sorted = Object.entries(workflowTokens).sort((a, b) => b[1] - a[1])
+    const sorted = Object.entries(workflowTokens).sort((a, b) => b[1] - a[1]);
 
-    return {
-      labels: sorted.map(([workflow]) => workflow),
-      datasets: [
-        {
-          label: "Total Tokens",
-          data: sorted.map(([, tokens]) => tokens),
-          backgroundColor: ["#3b82f6", "#f59e0b", "#10b981", "#ef4444"],
-        },
-      ],
-    }
-  }, [data])
-
-  const options: ChartOptions<"bar"> = {
-    indexAxis: "y",
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        callbacks: {
-          label: (context) => {
-            return `Tokens: ${(context.parsed.x || 0).toLocaleString()}`
-          },
-        },
-      },
-    },
-    scales: {
-      x: {
-        beginAtZero: true,
-        grid: {
-          color: "rgba(255,255,255,0.08)"
-        },
-        ticks: {
-          callback: (value) => value.toLocaleString(),
-          font: { size: isMobile ? 9 : 11 },
-          color: "rgba(255,255,255,0.7)"
-        },
-      },
-      y: {
-        grid: {
-          color: "rgba(255,255,255,0.08)"
-        },
-        ticks: {
-          font: { size: isMobile ? 9 : 11 },
-          color: "rgba(255,255,255,0.7)",
-          // ADD THIS callback for truncation
-          callback: function(value) {
-            const label = this.getLabelForValue(Number(value))
-            const maxLength = isMobile ? 15 : 25
-            return label.length > maxLength
-              ? label.substring(0, maxLength) + '...'
-              : label
-          },
-        },
-      },
-    },
-  }
+    return sorted.map(([workflow, tokens], index) => ({
+      workflow: truncate12(workflow),
+      fullName: workflow,
+      tokens,
+      fill: chartColors[index % chartColors.length],
+    }));
+  }, [data, chartColors]);
 
   return (
-<Card className="flex flex-col">
+    <Card className="flex flex-col">
       <CardHeader>
         <CardTitle>Token Usage by Workflow</CardTitle>
       </CardHeader>
-  <CardContent className="flex-1">
-    <div className="h-full min-h-[300px] w-full">
-          <Bar data={chartData} options={options} />
+      <CardContent className="flex-1">
+        <div className="h-full min-h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              layout="vertical"
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis
+                type="number"
+                className="text-xs fill-muted-foreground"
+                tick={{ fontSize: isMobile ? 9 : 11 }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => Number(value).toLocaleString()}
+              />
+              <YAxis
+                type="category"
+                dataKey="workflow"
+                className="text-xs fill-muted-foreground"
+                tick={{ fontSize: isMobile ? 9 : 11 }}
+                tickLine={false}
+                axisLine={false}
+                width={isMobile ? 60 : 80}
+              />
+              <Tooltip
+              cursor={{ fill: 'transparent' }}
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                    return (
+                      <div className="rounded-lg border bg-background p-2 shadow-md">
+                        <div className="grid gap-2">
+                          <div className="flex flex-col">
+                            <span className="text-[0.70rem] uppercase text-muted-foreground">
+                              Workflow
+                            </span>
+                            <span className="font-bold">{data.fullName}</span>
+                            <span className="text-muted-foreground">
+                              Tokens: {Number(payload[0]?.value ?? 0).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Bar dataKey="tokens" radius={[0, 4, 4, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

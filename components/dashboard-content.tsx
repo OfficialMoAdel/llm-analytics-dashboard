@@ -174,10 +174,16 @@ export default function DashboardContent() {
 
               <div className="grid grid-cols-[48px_1fr] gap-3 w-full
                       lg:flex lg:justify-end lg:items-center lg:gap-2 lg:w-auto lg:col-start-4">
-        <Button variant="outline" size="icon"
-                className="h-10 w-10 rounded-md lg:h-9 lg:w-9">
-          <RefreshCw className="h-4 w-4" />
-        </Button>
+       
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 rounded-md transition-transform hover:scale-105 active:scale-95"
+                  onClick={handleRefresh}
+                  disabled={loading}
+                >
+                  <RefreshCw className={`h-4 w-4 transition-transform ${loading ? 'animate-spin' : ''}`} />
+                </Button>
 
         <Button className="w-full lg:w-auto">
           <Filter className="mr-2 h-4 w-4" />

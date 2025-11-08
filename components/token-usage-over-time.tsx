@@ -1,92 +1,116 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { AnalyticsRow } from "@/lib/fetch-data"
-import { useMemo } from "react"
-import { Line } from "react-chartjs-2"
+import React, { useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { AnalyticsRow } from "@/lib/fetch-data";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
-  Legend,
-  Filler,
-  type ChartOptions,
-} from "chart.js"
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
+  ResponsiveContainer,
+} from "recharts";
+import { filterValidDates } from "@/lib/chart-theme";
 
 interface TokenUsageOverTimeProps {
-  data: AnalyticsRow[]
+  data: AnalyticsRow[];
 }
 
 export default function TokenUsageOverTime({ data }: TokenUsageOverTimeProps) {
   const chartData = useMemo(() => {
-    const dailyTokens = data.reduce(
-      (acc, row) => {
-        const date = new Date(row.timestamp).toLocaleDateString()
-        const tokens = row.input_tokens + row.completion_tokens
-        acc[date] = (acc[date] || 0) + tokens
-        return acc
-      },
-      {} as Record<string, number>,
-    )
+    const validData = filterValidDates(data, 'timestamp');
 
-    const sorted = Object.entries(dailyTokens).sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+    const dailyTokens = validData.reduce((acc, row) => {
+      const date = new Date(row.timestamp);
+      if (isNaN(date.getTime()) || date.toString() === 'Invalid Date') {
+        return acc;
+      }
+      const dateStr = date.toLocaleDateString();
+      const tokens = row.input_tokens + row.completion_tokens;
+      acc[dateStr] = (acc[dateStr] || 0) + tokens;
+      return acc;
+    }, {} as Record<string, number>);
 
-    return {
-      labels: sorted.map(([date]) => date),
-      datasets: [
-        {
-          label: "Token Usage",
-          data: sorted.map(([, tokens]) => tokens),
-          borderColor: "#3b82f6",
-          backgroundColor: "rgba(59, 130, 246, 0.1)",
-          fill: true,
-          tension: 0.4,
-        },
-      ],
-    }
-  }, [data])
+    const sorted = Object.entries(dailyTokens).sort(
+      (a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime()
+    );
 
-  const options: ChartOptions<"line"> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        callbacks: {
-          label: (context) => {
-            return `Tokens: ${(context.parsed.y ?? 0).toLocaleString()}`
-          },
-        },
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: (value) => value.toLocaleString(),
-        },
-      },
-    },
-  }
+    return sorted.map(([date, tokens]) => ({
+      date,
+      tokens,
+    }));
+  }, [data]);
 
   return (
-<Card className="flex flex-col">
+    <Card className="flex flex-col">
       <CardHeader>
         <CardTitle>Token Usage Over Time</CardTitle>
       </CardHeader>
-  <CardContent className="flex-1">
-    <div className="h-full min-h-[300px] w-full">
-          <Line data={chartData} options={options} />
+      <CardContent className="flex-1">
+        <div className="h-full min-h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              {/* ✅ التغيير هنا */}
+              <XAxis
+                dataKey="date"
+                className="text-xs fill-muted-foreground"
+                tick={{ fontSize: 12 }}
+                tickLine={false}
+                axisLine={false}
+                angle={-45}          // ✅ إمالة التواريخ
+                textAnchor="end"      // ✅ محاذاة النص
+                height={80}           // ✅ مساحة للتواريخ المائلة
+              />
+              <YAxis
+                className="text-xs fill-muted-foreground"
+                tick={{ fontSize: 12 }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => value.toLocaleString()}
+              />
+              <Tooltip
+                cursor={{ fill: 'transparent' }}
+                contentStyle={{
+                  background: "transparent",
+                  border: "none",
+                  boxShadow: "none",
+                }}
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="rounded-lg border bg-background p-2 shadow-md">
+                        <div className="grid gap-2">
+                          <div className="flex flex-col">
+                            <span className="text-[0.70rem] uppercase text-muted-foreground">
+                              {label}
+                            </span>
+                            <span className="font-bold text-muted-foreground">
+                              Tokens: {Number(payload[0]?.value ?? 0).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="tokens"
+                stroke="hsl(151.3274 66.8639% 66.8627%)"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                activeDot={{ r: 5 }}
+                fill="transparent"
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

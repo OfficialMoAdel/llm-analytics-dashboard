@@ -5,24 +5,151 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useIsMobile } from "@/hooks/use-mobile"
 import type { AnalyticsRow } from "@/lib/fetch-data"
 import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from "lucide-react"
+import { ModelDisplay } from "@/utils/model-icon-map"
 
 interface DetailedDataTableProps {
   data: AnalyticsRow[]
 }
+
+// دالة لمعالجة تنسيقات التاريخ المختلفة
+function parseMultiFormatDate(timestamp: string): Date {
+  if (!timestamp || typeof timestamp !== 'string') {
+    return new Date();
+  }
+
+  // محاولة التنسيق ISO أولاً (2025-07-04 18:45:14)
+  let date = new Date(timestamp)
+  if (!isNaN(date.getTime()) && date.getFullYear() > 1900 && date.getFullYear() < 2100) {
+    return date
+  }
+
+  // محاولة تنسيق DD/MM/YYYY HH:mm:ss AM/PM (17/10/2025 5:46:44 PM)
+  const ddmmyyyyAmpmPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})\s+(AM|PM)$/i
+  let match = timestamp.match(ddmmyyyyAmpmPattern)
+  
+  if (match) {
+    const [, day, month, year, hours, minutes, seconds, ampm] = match
+    let hour = parseInt(hours)
+    
+    // تحويل من 12 ساعة إلى 24 ساعة
+    if (ampm.toUpperCase() === 'PM' && hour !== 12) hour += 12
+    if (ampm.toUpperCase() === 'AM' && hour === 12) hour = 0
+    
+    return new Date(
+      parseInt(year),
+      parseInt(month) - 1,  // الشهر يبدأ من 0
+      parseInt(day),
+      hour,
+      parseInt(minutes),
+      parseInt(seconds)
+    )
+  }
+
+  // محاولة تنسيق DD/MM/YYYY HH:mm:ss (بدون AM/PM)
+  const ddmmyyyyPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})$/
+  match = timestamp.match(ddmmyyyyPattern)
+  
+  if (match) {
+    const [, day, month, year, hours, minutes, seconds] = match
+    return new Date(
+      parseInt(year),
+      parseInt(month) - 1,  // الشهر يبدأ من 0
+      parseInt(day),
+      parseInt(hours),
+      parseInt(minutes),
+      parseInt(seconds)
+    )
+  }
+
+  // محاولة تنسيق MM/DD/YYYY HH:mm:ss AM/PM
+  const mmddyyyyAmpmPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})\s+(AM|PM)$/i
+  match = timestamp.match(mmddyyyyAmpmPattern)
+  
+  if (match) {
+    const [, month, day, year, hours, minutes, seconds, ampm] = match
+    let hour = parseInt(hours)
+    
+    if (ampm.toUpperCase() === 'PM' && hour !== 12) hour += 12
+    if (ampm.toUpperCase() === 'AM' && hour === 12) hour = 0
+    
+    return new Date(
+      parseInt(year),
+      parseInt(month) - 1,
+      parseInt(day),
+      hour,
+      parseInt(minutes),
+      parseInt(seconds)
+    )
+  }
+
+  // محاولة تنسيق MM/DD/YYYY HH:mm:ss (بدون AM/PM)
+  const mmddyyyyPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})$/
+  match = timestamp.match(mmddyyyyPattern)
+  
+  if (match) {
+    const [, month, day, year, hours, minutes, seconds] = match
+    return new Date(
+      parseInt(year),
+      parseInt(month) - 1,
+      parseInt(day),
+      parseInt(hours),
+      parseInt(minutes),
+      parseInt(seconds)
+    )
+  }
+
+  // إذا فشل كل شيء، إرجاع التاريخ الحالي
+  console.warn(`Unable to parse date: ${timestamp}`)
+  return new Date()
+}
+
 
 export default function DetailedDataTable({ data }: DetailedDataTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [searchTerm, setSearchTerm] = useState("")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+  const isMobile = useIsMobile()
+
+  // ✅ دالة لتنسيق User ID (إظهار 10 أرقام في الموبايل و 12 في الكمبيوتر)
+  const formatUserId = (userId: string | null | undefined): string => {
+    if (!userId) {
+      return "(no data)";
+    }
+
+    // تحويل إلى string إذا لم يكن كذلك
+    let idStr = String(userId);
+
+    // تنظيف User ID
+    idStr = idStr.trim();
+    if (!idStr) {
+      return "(no data)";
+    }
+
+    // ✅ فحص القيم التالفة
+    if (idStr === 'undefined' || idStr === 'null' || idStr === 'NaN' || idStr === 'Infinity' || idStr === '-Infinity') {
+      console.warn('⚠️ Corrupted User ID detected:', userId);
+      return "(no data)";
+    }
+
+    // إذا كان رقماً صافياً وطويلاً - عرض آخر 10 أرقام في الموبايل و 12 في الكمبيوتر
+    const maxLength = isMobile ? 10 : 12;
+    if (/^\d+$/.test(idStr) && idStr.length > maxLength) {
+      return idStr.slice(-maxLength);
+    }
+
+    // لجميع الـ IDs الأخرى (إيميلات، IDs قصيرة، مختلطة) - إظهار كما هو
+    return idStr;
+  };
 
   const sortedAndFilteredData = useMemo(() => {
     // First, sort the data by time
     const sorted = [...data].sort((a, b) => {
-      const timeA = new Date(a.timestamp).getTime()
-      const timeB = new Date(b.timestamp).getTime()
+      const timeA = parseMultiFormatDate(a.timestamp).getTime()
+      const timeB = parseMultiFormatDate(b.timestamp).getTime()
       return sortOrder === "desc" ? timeB - timeA : timeA - timeB
     })
 
@@ -66,7 +193,7 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
   }
 
   const formatDateTime = (timestamp: string) => {
-    const date = new Date(timestamp)
+    const date = parseMultiFormatDate(timestamp)
     return {
       date: date.toLocaleDateString(),
       time: date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -128,7 +255,7 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
                 <TableHead className="text-right">Comp Tokens</TableHead>
                 <TableHead className="text-right">Total Tokens</TableHead>
                 <TableHead className="text-right">Total Cost</TableHead>
-                <TableHead>Workflow Name</TableHead>
+                <TableHead>W Name</TableHead>
                 <TableHead>User ID</TableHead>
                 <TableHead>Exec Time</TableHead>
               </TableRow>
@@ -149,10 +276,7 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
                     </TableCell>
 
                     <TableCell className="break-words max-w-[120px] sm:max-w-none">
-                      <span className="inline-flex items-center gap-1">
-                        <span className="text-lg sm:text-xl">🤖</span>
-                        <span className="text-xs sm:text-sm break-words">{row.llm_model}</span>
-                      </span>
+                      <ModelDisplay modelName={row.llm_model} />
                     </TableCell>
                     <TableCell className="text-right">{row.input_tokens.toLocaleString()}</TableCell>
                     <TableCell className="text-right">{row.completion_tokens.toLocaleString()}</TableCell>
@@ -161,7 +285,16 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
                     </TableCell>
                     <TableCell className="text-right">${row.total_cost.toFixed(5)}</TableCell>
                     <TableCell>{row.workflow_name}</TableCell>
-                    <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none">{row.user_id}</TableCell>
+                    <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none">
+                      {(() => {
+                        const displayId = formatUserId(row.user_id);
+                        if (displayId === "(no data)") {
+                          return <span className="text-muted-foreground italic text-xs">(no data)</span>;
+                        }
+                        // إظهار آخر 12 رقم، مع العنوان الكامل عند التمرير
+                        return <span title={row.user_id || ""}>{displayId}</span>;
+                      })()}
+                    </TableCell>
                     <TableCell className="text-xs sm:text-sm break-words max-w-[80px] sm:max-w-none">{row.time}</TableCell>
                   </TableRow>
                 )
