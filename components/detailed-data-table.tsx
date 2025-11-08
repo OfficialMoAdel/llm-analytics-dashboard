@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useIsMobile } from "@/hooks/use-mobile"
 import type { AnalyticsRow } from "@/lib/fetch-data"
 import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from "lucide-react"
 import { ModelDisplay } from "@/utils/model-icon-map"
@@ -111,26 +112,37 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [searchTerm, setSearchTerm] = useState("")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+  const isMobile = useIsMobile()
 
-  // ✅ دالة لتنسيق User ID (إظهار آخر 12 رقم فقط للأرقام الكبيرة)
+  // ✅ دالة لتنسيق User ID (إظهار 10 أرقام في الموبايل و 12 في الكمبيوتر)
   const formatUserId = (userId: string | null | undefined): string => {
-    if (!userId || typeof userId !== 'string') {
+    if (!userId) {
       return "(no data)";
     }
+
+    // تحويل إلى string إذا لم يكن كذلك
+    let idStr = String(userId);
 
     // تنظيف User ID
-    const cleanId = userId.trim();
-    if (!cleanId) {
+    idStr = idStr.trim();
+    if (!idStr) {
       return "(no data)";
     }
 
-    // فقط إذا كان رقماً صافياً وطويلاً (أكثر من 12 رقم)
-    if (/^\d+$/.test(cleanId) && cleanId.length > 12) {
-      return cleanId.slice(-12);
+    // ✅ فحص القيم التالفة
+    if (idStr === 'undefined' || idStr === 'null' || idStr === 'NaN' || idStr === 'Infinity' || idStr === '-Infinity') {
+      console.warn('⚠️ Corrupted User ID detected:', userId);
+      return "(no data)";
+    }
+
+    // إذا كان رقماً صافياً وطويلاً - عرض آخر 10 أرقام في الموبايل و 12 في الكمبيوتر
+    const maxLength = isMobile ? 10 : 12;
+    if (/^\d+$/.test(idStr) && idStr.length > maxLength) {
+      return idStr.slice(-maxLength);
     }
 
     // لجميع الـ IDs الأخرى (إيميلات، IDs قصيرة، مختلطة) - إظهار كما هو
-    return cleanId;
+    return idStr;
   };
 
   const sortedAndFilteredData = useMemo(() => {
@@ -243,7 +255,7 @@ export default function DetailedDataTable({ data }: DetailedDataTableProps) {
                 <TableHead className="text-right">Comp Tokens</TableHead>
                 <TableHead className="text-right">Total Tokens</TableHead>
                 <TableHead className="text-right">Total Cost</TableHead>
-                <TableHead>Workflow Name</TableHead>
+                <TableHead>W Name</TableHead>
                 <TableHead>User ID</TableHead>
                 <TableHead>Exec Time</TableHead>
               </TableRow>

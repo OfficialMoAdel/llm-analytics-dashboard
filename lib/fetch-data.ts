@@ -1,4 +1,8 @@
 // في بداية ملف fetch-data.ts
+
+// JavaScript MAX_SAFE_INTEGER constant for reference
+const MAX_SAFE_INTEGER = 9007199254740991
+
 export interface AnalyticsRow {
   execution_id: string
   timestamp: string
@@ -66,13 +70,34 @@ export async function fetchGoogleSheetData(): Promise<AnalyticsRow[]> {
         // استخراج user_id بشكل صحيح (مع دعم الأرقام الكبيرة)
         let user_id_str = ""
         if (row.c[12]) {
+          // ✅ إضافة تسجيل لتتبع القيم الكبيرة
+          const rawValue = row.c[12]
+          if (rawValue && (typeof rawValue.v === 'number' && rawValue.v > MAX_SAFE_INTEGER)) {
+            console.log('🔍 Large User ID detected:', {
+              original: rawValue.v,
+              type: typeof rawValue.v,
+              formatted: rawValue.f,
+              asString: String(rawValue.v)
+            })
+          }
+
           if (row.c[12].f) {
             // استخدام القيمة المُنسقة إذا كانت متوفرة
             user_id_str = String(row.c[12].f).trim()
           } else if (row.c[12].v !== undefined && row.c[12].v !== null) {
             const val = row.c[12].v
-            // التأكد من أن user_id دائماً string (حتى للأرقام الكبيرة)
-            user_id_str = String(val).trim()
+
+            // ✅ معالجة خاصة للأرقام الكبيرة جداً
+            // التحقق من أن القيمة رقمية وتتججاوز الحد الآمن في JavaScript
+            if (typeof val === 'number' && val > MAX_SAFE_INTEGER) {
+              // محاولة استخدام cell.f أولاً للحصول على القيمة الأصلية
+              user_id_str = row.c[12].f ? String(row.c[12].f).trim() : String(val).trim()
+
+              console.log('✅ Large User ID processed:', user_id_str)
+            } else {
+              // للقيم العادية - التأكد من أن user_id دائماً string
+              user_id_str = String(val).trim()
+            }
           }
         }
 
