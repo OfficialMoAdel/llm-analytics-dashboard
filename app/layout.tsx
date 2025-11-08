@@ -1,6 +1,5 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Analytics } from '@vercel/analytics/next'
 import { Suspense } from "react"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -37,7 +36,6 @@ export default function RootLayout({
             {children}
           </Suspense>
         </ThemeProvider>
-        <Analytics />
       </body>
     </html>
   )
