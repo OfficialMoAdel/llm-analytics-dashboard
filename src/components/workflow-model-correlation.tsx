@@ -109,7 +109,7 @@ export default function WorkflowModelCorrelation({ data }: Props) {
         {/* ✅ الرسم البياني في الأعلى */}
         <div className="flex-1 min-h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
+            <BarChart data={chartData} barGap={5} barCategoryGap="20%" >
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis
                 dataKey="workflow"
@@ -119,7 +119,8 @@ export default function WorkflowModelCorrelation({ data }: Props) {
                 axisLine={false}
                 angle={-45}              // ✅ أضف هنا
                 textAnchor="end"         // ✅ أضف هنا
-                height={80} 
+                height={80}
+
               />
               <YAxis
                 className="text-xs fill-muted-foreground"
@@ -162,6 +163,8 @@ export default function WorkflowModelCorrelation({ data }: Props) {
                   fill={model.color}
                   stroke={model.color}
                   strokeWidth={1.5}
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={30}
                 />
               ))}
             </BarChart>
